@@ -1,8 +1,43 @@
-﻿#***************************************** Part to fill ***************************************************
+﻿<#
+_author_ = Sven Riebe <sven_riebe@Dell.com>
+_twitter_ = @SvenRiebe
+_version_ = 1.0
+_Dev_Status_ = Test
+Copyright © 2022 Dell Inc. or its subsidiaries. All Rights Reserved.
+
+No implied support and test in test environment/device before using in any production environment.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+#>
+
+<#
+.Synopsis
+   This PowerShell collecting all installed drivers and upload these informations to LogAnalytics (portal.azure.com)
+   IMPORTANT: This script need to install Dell Command Update or Dell Support Assist for Business first otherwise you will get no details about installed drivers
+   IMPORTANT: LogAnalytics is a service from Microsoft and is NOT free of charge please checking your MS contracts if you have this service availible otherwise you need to order this service.
+   IMPORTANT: This script does not reboot the system to apply or query system.
+   IMPORTANT: This script is supporting Dell Business Devices only (Optiplex, Precision, Latitude and Mobile XPS)
+
+.DESCRIPTION
+   This PowerShell is starting the Dell Inventory Agent and collect all installed Driver Informations Driver-Name, Driver-Version and Driver-Category and using the LogAnalytics API to upload all informations directly to portal.azure.com / LogAnalytics Service.
+   
+#>
+
+<#The functions Function Build-Signature and Function Post-LogAnalyticsData was developed by https://www.systanddeploy.com/2022/05/intune-reporting-with-log-analytics.html and used by me without any change #>
+
+#***************************************** Part to fill ***************************************************
 # Log analytics part
 $CustomerId = "cb9801e8-b5b0-4dfe-ab1e-ff8a17642010"
 $SharedKey = 'y15hSyg+5xekllOCyIxIW8LbuipepJCiR6ToGCfu5Umi5lqhaSCr19toWrGGtJQ5REcV1TeQCZaPvxfhwfgepw=='
-$LogType = "DellDriverStatus"
+$LogType = "DellDriverInstalled"
 $TimeStampField = ""
 #***********************************************************************************************************
 
@@ -75,28 +110,7 @@ Start-Sleep -Seconds 5
 Remove-Item C:\Temp\inventory
 
 
-
-$missingDriver = & 'C:\Program Files\Dell\CommandUpdate\dcu-cli.exe' /scan
-
-#checking if drivers are availible or not
-$checkMissingDriver = ($missingDriver | Select-String "Number of applicable updates for the current system configuration: ").Line.TrimStart('Number of applicable updates for the current system configuration: ')
-
-If ($checkMissingDriver -ne 0)
-    {
-    
-    $missingDriverSelect = $missingDriver | Select-String "--"
-
-    }
-
-Else
-    {
-
-    $missingDriverSelect = "No updates availible"
-
-    }
-	
 #Prepare the Table Array for log analytics
-
 $DriverArray = @()
 
 foreach ($Driver in $DriverIST)
@@ -118,37 +132,16 @@ foreach ($Driver in $DriverIST)
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $Driver.display -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $Driver.version -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value $Driver.componentType -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'MissingUpdates' $missingDriver
 
-        $DriverArrayTemp
-
+        #Create the object
         [Array]$DriverArray += $DriverArrayTemp
                         
         }
 
 
 
-# Create the object
-$Properties = [Ordered] @{
-    
-        "Computer"    = $DriverArray.Computername
-        "UserName"    = $DriverArray.UserName
-        "Vendor"      = $DriverArray.Manufacturer
-        "DeviceModel" = $DriverArray.DeviceModel
-        "ProductLine" = $DriverArray.ProductLine
-        "SerialNumber"= $DriverArray.SerialNo
-        "SystemSKU"   = $DriverArray.SystemSKU
-        "OSEdition"   = $DriverArray.OSEditon
-        "OSVersion"   = $DriverArray.OSVersion
-        "DriverTodayName" = $DriverArray.DriverName
-        "DriverTodayVersion" = $DriverArray.DriverVersion
-        "DriverTodayType" = $DriverArray.DriverCategory
-        "MissingDriverUpdates" = $DriverArray.MissingUpdates
-         				
-}
-$DeviceInfo = New-Object -TypeName "PSObject" -Property $Properties
-
-$DeviceInfoJson = $DriverArray | ConvertTo-Json #$DeviceInfo
+# Convert Array to JSON format
+$DeviceInfoJson = $DriverArray | ConvertTo-Json
 
 $params = @{
     CustomerId = $customerId
