@@ -148,7 +148,7 @@ $Properties = [Ordered] @{
 }
 $DeviceInfo = New-Object -TypeName "PSObject" -Property $Properties
 
-$DeviceInfoJson = $DeviceInfo | ConvertTo-Json
+$DeviceInfoJson = $DriverArray | ConvertTo-Json #$DeviceInfo
 
 $params = @{
     CustomerId = $customerId
