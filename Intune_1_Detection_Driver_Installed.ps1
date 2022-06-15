@@ -100,8 +100,8 @@ $Model = ($deviceData.CsModel)
 $DeviceSerie = ($deviceData.CsModel).Split(" ")[0]
 $ServiceTag = $deviceData.BiosSeralNumber
 $DeviceSKU = $deviceData.CsSystemSKUNumber
-$OSVersion = $deviceData.OSDisplayVersion
-$WinEdition = $deviceData.WindowsProductName
+$OSVersion = $deviceData.OsVersion
+$WinEdition = $deviceData.OsName
 
 Start-Process 'C:\Program Files (x86)\Dell\UpdateService\Service\InvColPC.exe' -ArgumentList '-outc=c:\Temp\inventory' -Wait
 [xml]$DriverInventory = Get-Content C:\Temp\inventory
@@ -127,7 +127,7 @@ foreach ($Driver in $DriverIST)
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSEditon' -Value $WinEdition -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSEdition' -Value $WinEdition -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSVersion' -Value $OSVersion -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $Driver.display -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $Driver.version -Force
