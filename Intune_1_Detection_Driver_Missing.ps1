@@ -16,6 +16,16 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+<#Version Changes
+
+1.0.0   inital version
+1.0.1   using Device Catalog XML to get more details for driver update
+
+Knowing Issues
+-   tbd
+#>
+
 #>
 
 <#
@@ -124,18 +134,25 @@ Else
 
     }
 
-# select datas of the device for logggin
+# select datas of the device for loging
 $Username = ($deviceData.CsUserName).Split("\")[-1]
 $Vendor = ($deviceData.CsManufacturer).Split(" ")[0]
 $Model = ($deviceData.CsModel)
 $DeviceSerie = ($deviceData.CsModel).Split(" ")[0]
 $ServiceTag = $deviceData.BiosSeralNumber
+$DeviceSKU = $deviceData.CsSystemSKUNumber
 
 # Spliting text strings in single values in one array
 $DriverString = $DCUScan | Select-String ("--")
 [Array]$DriverTemp1 = $DriverString -split ": "
 [Array]$DriverTemp2 = $DriverTemp1 -split " -- "
 [Array]$DriverTemp3 = $DriverTemp2 -split " - "
+
+#Collect details from Dell Driver Device Catalog
+$catalogPath = $env:ProgramData+'\Dell\UpdateService\Temp'
+$CatalogFileName = Get-ChildItem $catalogPath | Where-Object Name -Like "*$DeviceSKU*xml" | select -ExpandProperty Name
+[XML]$DeviceCatalog = Get-Content $catalogPath\$CatalogFileName
+
 
 
 #Prepare the Table Array for log analytics
@@ -150,10 +167,27 @@ $Index = 0
 for ($i = 1; $i -le $count)
     {
     
+    # Temp Var to get XML Datas from Device Catalog
+    $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $DriverTemp3[$Index]}
+
+    # preselect xml values for new array
+    $TempDriverMissingName = $TempXMLCatalog.Name.Display | Select-Object -ExpandProperty '#cdata-section'
+    $TempDriverMissingCategory = $TempXMLCatalog.Category.Display | Select-Object -ExpandProperty '#cdata-section'
+    $TempDriverMissingSeverity = $TempXMLCatalog.Criticality.Display | Select-Object -ExpandProperty '#cdata-section'
+    $TempDriverMissingType = $TempXMLCatalog.ComponentType.Display | Select-Object -ExpandProperty '#cdata-section'
+    $TempDriverMissingDescription = $TempXMLCatalog.Description.Display | Select-Object -ExpandProperty '#cdata-section'
+    $TempDriverMissingReleaseDate = $TempXMLCatalog.releaseDate
+    $TempDriverMissingVendorVersion = $TempXMLCatalog.vendorVersion
+    $TempDriverMissingDellVersion = $TempXMLCatalog.dellVersion
+    $TempDriverMissingPath = "dl.dell.com/"+$TempXMLCatalog.path
+    $TempDriverMissingDetails = $TempXMLCatalog.ImportantInfo | Select-Object -ExpandProperty URL
+    $TempDriverMissingComponentID = $TempXMLCatalog.SupportedDevices.Device | select -ExpandProperty componentID
+
+    
+    
     #generate a new Temp object
     $DriverArrayTemp = New-Object PSObject
-    
-    
+        
 
     # build a temporary array
     $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
@@ -162,12 +196,20 @@ for ($i = 1; $i -le $count)
     $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
     $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
     $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
     $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value $DriverTemp3[$Index] -Force
-    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value $DriverTemp3[$Index+1] -Force
-    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value $DriverTemp3[$Index+2] -Force
-    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value $DriverTemp3[$Index+3] -Force
-    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingType' -Value $DriverTemp3[$Index+4] -Force
-        
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value $TempDriverMissingName -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value $TempDriverMissingCategory -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value $TempDriverMissingSeverity -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingType' -Value $TempDriverMissingType -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDescription' -Value $TempDriverMissingDescription -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingReleaseDate' -Value $TempDriverMissingReleaseDate -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingVendorVersion' -Value $TempDriverMissingVendorVersion -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value $TempDriverMissingDellVersion -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value $TempDriverMissingPath -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value $TempDriverMissingDetails -Force
+    $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value $TempDriverMissingComponentID -Force
+    
 
     #Create the object
     [Array]$DriverArray += $DriverArrayTemp
