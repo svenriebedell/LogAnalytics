@@ -148,6 +148,7 @@ $DriverString = $DCUScan | Select-String ("--")
 [Array]$DriverTemp2 = $DriverTemp1 -split " -- "
 [Array]$DriverTemp3 = $DriverTemp2 -split " - "
 
+
 #Collect details from Dell Driver Device Catalog
 $catalogPath = $env:ProgramData+'\Dell\UpdateService\Temp'
 $CatalogFileName = Get-ChildItem $catalogPath | Where-Object Name -Like "*$DeviceSKU*xml" | select -ExpandProperty Name
@@ -171,19 +172,31 @@ for ($i = 1; $i -le $count)
     $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $DriverTemp3[$Index]}
 
     # preselect xml values for new array
-    $TempDriverMissingName = $TempXMLCatalog.Name.Display | Select-Object -ExpandProperty '#cdata-section'
-    $TempDriverMissingCategory = $TempXMLCatalog.Category.Display | Select-Object -ExpandProperty '#cdata-section'
-    $TempDriverMissingSeverity = $TempXMLCatalog.Criticality.Display | Select-Object -ExpandProperty '#cdata-section'
-    $TempDriverMissingType = $TempXMLCatalog.ComponentType.Display | Select-Object -ExpandProperty '#cdata-section'
-    $TempDriverMissingDescription = $TempXMLCatalog.Description.Display | Select-Object -ExpandProperty '#cdata-section'
-    $TempDriverMissingReleaseDate = $TempXMLCatalog.releaseDate
-    $TempDriverMissingVendorVersion = $TempXMLCatalog.vendorVersion
-    $TempDriverMissingDellVersion = $TempXMLCatalog.dellVersion
-    $TempDriverMissingPath = "dl.dell.com/"+$TempXMLCatalog.path
-    $TempDriverMissingDetails = $TempXMLCatalog.ImportantInfo | Select-Object -ExpandProperty URL
-    $TempDriverMissingComponentID = $TempXMLCatalog.SupportedDevices.Device | select -ExpandProperty componentID
+    [array]$TempDriverMissingNameTemp = $TempXMLCatalog.Name.Display | Select-Object -ExpandProperty '#cdata-section'
+    [array]$TempDriverMissingCategoryTemp = $TempXMLCatalog.Category.Display | Select-Object -ExpandProperty '#cdata-section'
+    [array]$TempDriverMissingSeverityTemp = $TempXMLCatalog.Criticality.Display | Select-Object -ExpandProperty '#cdata-section'
+    [array]$TempDriverMissingTypeTemp = $TempXMLCatalog.ComponentType.Display | Select-Object -ExpandProperty '#cdata-section'
+    [array]$TempDriverMissingDescriptionTemp = $TempXMLCatalog.Description.Display | Select-Object -ExpandProperty '#cdata-section'
+    [array]$TempDriverMissingReleaseDateTemp = $TempXMLCatalog.releaseDate
+    [array]$TempDriverMissingVendorVersionTemp = $TempXMLCatalog.vendorVersion
+    [array]$TempDriverMissingDellVersionTemp = $TempXMLCatalog.dellVersion
+    [array]$TempDriverMissingPathTemp = "dl.dell.com/"+$TempXMLCatalog.path
+    [array]$TempDriverMissingDetailsTemp = $TempXMLCatalog.ImportantInfo | Select-Object -ExpandProperty URL
+    [array]$TempDriverMissingComponentIDTemp = $TempXMLCatalog.SupportedDevices.Device
 
-    
+    # select first values in case of some Driver ID´s have more than one input in the catalog.
+    $TempDriverMissingName = $TempDriverMissingNameTemp | Select-Object -First 1
+    $TempDriverMissingCategory = $TempDriverMissingCategoryTemp | Select-Object -First 1
+    $TempDriverMissingSeverity = $TempDriverMissingSeverityTemp | Select-Object -First 1
+    $TempDriverMissingType = $TempDriverMissingTypeTemp | Select-Object -First 1
+    $TempDriverMissingDescription = $TempDriverMissingDescriptionTemp | Select-Object -First 1
+    $TempDriverMissingReleaseDate = $TempDriverMissingReleaseDateTemp | Select-Object -First 1
+    $TempDriverMissingVendorVersion = $TempDriverMissingVendorVersionTemp | Select-Object -First 1
+    $TempDriverMissingDellVersion = $TempDriverMissingDellVersionTemp | Select-Object -First 1
+    $TempDriverMissingPath = $TempDriverMissingPathTemp | Select-Object -First 1
+    $TempDriverMissingDetails = $TempDriverMissingDetailsTemp | Select-Object -First 1
+    $TempDriverMissingComponentID = $TempDriverMissingComponentID | Select-Object -First 1
+      
     
     #generate a new Temp object
     $DriverArrayTemp = New-Object PSObject
