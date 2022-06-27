@@ -150,26 +150,35 @@ if ($UpdateCount -eq 0)
         {
         
         # for Devices without updates write data with resulte no updates
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value "NOUPD" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value "no updates" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value "no updates" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value "" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingType' -Value "" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingDescription' -Value "This device has no updates" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingReleaseDate' -Value "" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingVendorVersion' -Value "" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value "" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value "" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value "" -Force
-            $DriverArray | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value "" -Force
+
+        #generate a new Temp object
+        $DriverArrayTemp = New-Object PSObject
+        
+        # build a temporary array
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value "NOUPD" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value "no updates" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value "no updates" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingType' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDescription' -Value "This device has no updates" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingReleaseDate' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingVendorVersion' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value "" -Force
     
+
+        #Create the object
+        [Array]$DriverArray += $DriverArrayTemp
+        
         }
     Else
         {
