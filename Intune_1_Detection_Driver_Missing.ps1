@@ -1,7 +1,7 @@
-﻿<#
+<#
 _author_ = Sven Riebe <sven_riebe@Dell.com>
 _twitter_ = @SvenRiebe
-_version_ = 1.0
+_version_ = 1.0.2
 _Dev_Status_ = Test
 Copyright © 2022 Dell Inc. or its subsidiaries. All Rights Reserved.
 
@@ -21,6 +21,7 @@ limitations under the License.
 
 1.0.0   inital version
 1.0.1   using Device Catalog XML to get more details for driver update
+1.0.2   correct problem with multi values in Device Catalog. Returning now "no Update" if this device is full updated
 
 Knowing Issues
 -   tbd
@@ -194,7 +195,7 @@ if ($UpdateCount -eq 0)
 
         #Collect details from Dell Driver Device Catalog
         $catalogPath = $env:ProgramData+'\Dell\UpdateService\Temp'
-        $CatalogFileName = Get-ChildItem $catalogPath | Where-Object Name -Like "*$DeviceSKU*xml" | select -ExpandProperty Name
+        $CatalogFileName = Get-ChildItem $catalogPath | Where-Object Name -Like "*$DeviceSKU*xml" | Select-Object -ExpandProperty Name
         [XML]$DeviceCatalog = Get-Content $catalogPath\$CatalogFileName
 
         
@@ -237,7 +238,7 @@ if ($UpdateCount -eq 0)
             $TempDriverMissingDellVersion = $TempDriverMissingDellVersionTemp | Select-Object -First 1
             $TempDriverMissingPath = $TempDriverMissingPathTemp | Select-Object -First 1
             $TempDriverMissingDetails = $TempDriverMissingDetailsTemp | Select-Object -First 1
-            $TempDriverMissingComponentID = $TempDriverMissingComponentID | Select-Object -First 1
+            $TempDriverMissingComponentID = $TempDriverMissingComponentIDTemp | Select-Object -First 1
       
     
             #generate a new Temp object
