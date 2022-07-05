@@ -114,20 +114,20 @@
             "delimiter": ",",
             "query": "DellDriverMissing_CL\r\n| distinct DriverMissingCategory_s",
             "value": [
-              "Driver",
               "BIOS",
-              "Application",
-              "Firmware",
-              "Docks/Stands",
-              "Chipset",
-              "Security",
-              "Network",
-              "Systems Management",
-              "Serial ATA",
-              "Audio",
-              "Video",
               "no updates",
-              "Communications"
+              "Security",
+              "Systems Management",
+              "Docks/Stands",
+              "Application",
+              "Network",
+              "Chipset",
+              "Communications",
+              "Serial ATA",
+              "Driver",
+              "Firmware",
+              "Audio",
+              "Video"
             ],
             "typeSettings": {
               "additionalResourceOptions": [
@@ -370,7 +370,7 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "DellDriverMissing_CL\r\n| distinct DriverMissingSeverity_s",
+            "query": "DellDriverMissing_CL\r\n| distinct DriverMissingSeverity_s\r\n| where DriverMissingSeverity_s != (\"NoUpdate\")",
             "value": [
               "value::all"
             ],
@@ -399,7 +399,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "DellDriverMissing_CL\r\n| summarize arg_max(TimeGenerated,*) by DriverMissingName_s\r\n| where DriverMissingName_s <> \"no updates\"\r\n| summarize count () by ID = DriverMissingID_s, Name = DriverMissingName_s, Version = DriverMissingVendorVersion_s\r\n\r\n",
+        "query": "DellDriverMissing_CL\r\n| where DriverMissingSeverity_s in ({Severity})\r\n| summarize arg_max(TimeGenerated,*) by DriverMissingName_s\r\n| where DriverMissingName_s <> \"no updates\"\r\n| summarize count () by ID = DriverMissingID_s, Name = DriverMissingName_s, Version = DriverMissingVendorVersion_s, DriverMissingCategory_s\r\n\r\n",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
