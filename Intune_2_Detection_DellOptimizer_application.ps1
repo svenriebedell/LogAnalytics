@@ -46,7 +46,7 @@ Knowing Issues
 # Log analytics part
 $CustomerId = "cb9801e8-b5b0-4dfe-ab1e-ff8a17642010"
 $SharedKey = 'y15hSyg+5xekllOCyIxIW8LbuipepJCiR6ToGCfu5Umi5lqhaSCr19toWrGGtJQ5REcV1TeQCZaPvxfhwfgepw=='
-$LogType = "DellOptimizerSettings"
+$LogType = "DellOptimizerApp"
 $TimeStampField = ""
 #***********************************************************************************************************
 
@@ -301,7 +301,7 @@ $DOInfoJson = $DOArray | ConvertTo-Json
 $params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
-    Body       = ([System.Text.Encoding]::UTF8.GetBytes($DeviceInfoJson))
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($DOInfoJson))
     LogType    = $LogType 
 }
 
