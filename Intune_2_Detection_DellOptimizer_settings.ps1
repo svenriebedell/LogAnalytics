@@ -177,7 +177,7 @@ $DOInfoJson = $DOArray | ConvertTo-Json
 $params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
-    Body       = ([System.Text.Encoding]::UTF8.GetBytes($DeviceInfoJson))
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($DOInfoJson))
     LogType    = $LogType 
 }
 
