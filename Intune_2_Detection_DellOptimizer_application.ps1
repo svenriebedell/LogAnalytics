@@ -22,7 +22,7 @@ limitations under the License.
 1.0.0   inital version
 
 Knowing Issues
--   tbd
+-   If a app in learning modus without process path the app fields for upload are not correct. The reason for app without process path are e.g. configure learning app by script without check if app is installed on the device.
 #>
 
 #>
