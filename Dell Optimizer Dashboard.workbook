@@ -26,23 +26,6 @@
             "name": "MandetoryApp1",
             "type": 2,
             "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*) by Name_s\r\n| distinct Name_s\r\n| order by Name_s asc",
-            "value": "Microsoft Teams",
-            "typeSettings": {
-              "additionalResourceOptions": [],
-              "showDefault": false
-            },
-            "timeContext": {
-              "durationMs": 86400000
-            },
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
-          },
-          {
-            "id": "f3a072b2-d45c-4150-9b5f-6d3b51283074",
-            "version": "KqlParameterItem/1.0",
-            "name": "MandetoryApp2",
-            "type": 2,
-            "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*) by Name_s\r\n| distinct Name_s\r\n| order by Name_s asc",
             "value": "Discord",
             "typeSettings": {
               "additionalResourceOptions": [],
@@ -55,7 +38,23 @@
             "resourceType": "microsoft.operationalinsights/workspaces"
           },
           {
-            "id": "f3a072b2-d45c-4150-9b5f-6d3b51283074",
+            "version": "KqlParameterItem/1.0",
+            "name": "MandetoryApp2",
+            "type": 2,
+            "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*) by Name_s\r\n| distinct Name_s\r\n| order by Name_s asc",
+            "value": null,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "9dbc4ac7-7f7b-4310-9cb1-ed58f18f19a1"
+          },
+          {
             "version": "KqlParameterItem/1.0",
             "name": "MandetoryApp3",
             "type": 2,
@@ -69,7 +68,8 @@
               "durationMs": 86400000
             },
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "1fe38d4f-6cc3-4013-8940-00344fe9419a"
           }
         ],
         "style": "pills",
@@ -196,7 +196,10 @@
             "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
-            "id": "6b351ae3-a4a3-4feb-88ca-751a71cfc4b1"
+            "id": "6b351ae3-a4a3-4feb-88ca-751a71cfc4b1",
+            "value": [
+              "value::all"
+            ]
           },
           {
             "version": "KqlParameterItem/1.0",
@@ -450,6 +453,44 @@
         "json": "### Section of Dell Optimizer Settings\r\n\r\nHere you will see all configurtion options a client will support with the Dell Optimizer and how is configured at the moment."
       },
       "name": "text - 24"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "49d2d3b8-465d-4e53-9c5c-20fc662c0ed0",
+            "version": "KqlParameterItem/1.0",
+            "name": "Computer",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| project ComputerName_s",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 28"
     },
     {
       "type": 3,
@@ -735,7 +776,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "DellOptimizerApp_CL\r\n| where Status_s in (\"Learning\")\r\n| summarize arg_max(TimeGenerated,*) by ComputerName_s, ProcessName_s\r\n| project ProcessName_s, Name_s, Status_s, PercentLearned_s, DeviceModel_s, ComputerName_s\r\n",
+        "query": "DellOptimizerApp_CL\r\n| where Status_s in (\"Learning\")\r\n| summarize arg_max(TimeGenerated,*) by ComputerName_s, ProcessName_s, ProcessPath_s\r\n| project ProcessName_s, Name_s, Status_s, PercentLearned_s, DeviceModel_s, ComputerName_s\r\n",
         "size": 0,
         "title": "Application in learning modus by Dell Optimizer",
         "timeContextFromParameter": "TimeRange",
