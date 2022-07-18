@@ -45,8 +45,8 @@ https://www.dell.com/support/home/en-us/drivers/driversdetails?driverid=x7c54&os
 
 
 Video:
+![4B2FF917-2ECC-4B62-A6CE-CEC15CEF47ED](https://user-images.githubusercontent.com/99394991/179505666-a428cf75-8561-4bf8-8e6d-c330801b61b3.GIF)
 
-![Uploading 4B2FF917-2ECC-4B62-A6CE-CEC15CEF47ED.GIF…]()
 
 ## Dell BIOS Dashboard
 
