@@ -34,6 +34,7 @@ https://www.dell.com/support/kbdoc/en-us/000177325/dell-command-update
 
 Video:
 
+![A73895E2-11E0-4B39-BC61-F3ACE63A6C1B](https://user-images.githubusercontent.com/99394991/179505164-7876e9c8-8520-4396-b98a-774c5d863ec5.GIF)
 
 ## Dell Optimizer Dashboard
 
@@ -45,6 +46,7 @@ https://www.dell.com/support/home/en-us/drivers/driversdetails?driverid=x7c54&os
 
 Video:
 
+![Uploading 4B2FF917-2ECC-4B62-A6CE-CEC15CEF47ED.GIF…]()
 
 ## Dell BIOS Dashboard
 
