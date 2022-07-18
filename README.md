@@ -9,16 +9,16 @@ This script will be used for testing modifications that could have impact of run
 We cover the following applications and Dell Client functions 
 
 
-- Dell Command Update 
+- **Dell Command Update 
     + Status of missing Drivers (Firmware, BIOS, Dell Applications, etc.) 
     + Assessment of installed Drivers on devices 
 
-- Dell Optimizer 
+- **Dell Optimizer 
     + Monitoring Learned and Optimized Applications 
     + Assessment of Dell Optimizer settings on devices 
     + Compliance check of settings and applications learning/optimized 
 
-- BIOS 
+- **Dell BIOS 
     + Dell Safe BIOS Security monitoring 
     + BIOS PW check 
     + BIOS settings on device 
