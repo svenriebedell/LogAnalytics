@@ -26,7 +26,7 @@
             "name": "MandetoryApp1",
             "type": 2,
             "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*) by Name_s\r\n| distinct Name_s\r\n| order by Name_s asc",
-            "value": "Discord",
+            "value": null,
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -82,7 +82,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*)  by ComputerName_s, Name_s, ProcessName_s\r\n| summarize FilterApp = makelist(Name_s) by ComputerName_s, TimeGenerated,DeviceModel_s\r\n| where not(FilterApp has_any(\"{MandetoryApp1}\"))\r\nor not(FilterApp has_any(\"{MandetoryApp2}\"))\r\nor not(FilterApp has_any(\"{MandetoryApp3}\"))\r\n| project Computer = ComputerName_s, AppKnown = FilterApp, LastScan = TimeGenerated, DeviceModel = DeviceModel_s\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
+        "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*)  by ComputerName_s, Name_s, ProcessName_s\r\n| summarize FilterApp = makelist(Name_s) by ComputerName_s, TimeGenerated,DeviceModel_s\r\n| where not(FilterApp has_any(\"{MandetoryApp1}\"))\r\nor not(FilterApp has_any(\"{MandetoryApp2}\"))\r\nor not(FilterApp has_any(\"{MandetoryApp3}\"))\r\n| summarize arg_max(TimeGenerated,*)  by ComputerName_s\r\n| project Computer = ComputerName_s, AppKnown = FilterApp, LastScan = TimeGenerated, DeviceModel = DeviceModel_s\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
         "size": 0,
         "title": "Devices missing mandetory App for optimized process",
         "noDataMessage": "no data",
@@ -436,12 +436,10 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let startTime = now(-14d);\r\nlet endTime = now();\r\nDellOptimizerApp_CL\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| make-series num=dcount(Version_s) on TimeGenerated in range(startTime, endTime, 1d) by Version_s\r\n| render areachart",
+        "query": "let startTime = now(-14d);\r\nlet endTime = now();\r\nDellOptimizerApp_CL\r\n| make-series num=dcount(Version_s) on TimeGenerated in range(startTime, endTime, 1d) by Version_s, ComputerName_s\r\n| render areachart",
         "size": 0,
+        "aggregation": 5,
         "title": "Dell Optimizer installed Version (last 14 days)",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
@@ -470,7 +468,7 @@
             "delimiter": ",",
             "query": "DellOptimizerSettings_CL\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| project ComputerName_s",
             "value": [
-              "value::all"
+              "SRLAB-1X752J3"
             ],
             "typeSettings": {
               "additionalResourceOptions": [
@@ -484,6 +482,49 @@
             "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "id": "6c3f9126-4ac3-4322-9d8f-7f8744c6bf18",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "value": {
+              "durationMs": 172800000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ]
+            }
           }
         ],
         "style": "pills",
@@ -524,7 +565,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "DellOptimizerSettings_CL\r\n| where ComputerName_s in ({Computer})\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s, Name_s, Value_s\r\n| sort by Name_s asc\r\n| project Computer = ComputerName_s, Setting = Name_s, Value = Value_s, Lockstatus = IsLocked_s, ReadOnly = IsReadOnly_s, Options = SupportedValues_s\r\n\r\n\r\n",
+        "query": "DellOptimizerSettings_CL\r\n| where ComputerName_s in ({Computer})\r\n| summarize arg_max (TimeGenerated,*) by Name_s, ComputerName_s, Value_s\r\n| sort by Name_s asc\r\n| project Computer = ComputerName_s, Setting = Name_s, Value = Value_s, Lockstatus = IsLocked_s, ReadOnly = IsReadOnly_s, Options = SupportedValues_s, LastScan = TimeGenerated\r\n\r\n\r\n",
         "size": 0,
         "title": "Last Dell Optimizer settings on Device",
         "timeContextFromParameter": "TimeRange",
@@ -785,14 +826,14 @@
         "gridSettings": {
           "sortBy": [
             {
-              "itemKey": "ComputerName_s",
+              "itemKey": "DeviceModel_s",
               "sortOrder": 1
             }
           ]
         },
         "sortBy": [
           {
-            "itemKey": "ComputerName_s",
+            "itemKey": "DeviceModel_s",
             "sortOrder": 1
           }
         ]
