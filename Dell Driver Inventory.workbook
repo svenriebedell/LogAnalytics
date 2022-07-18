@@ -651,7 +651,7 @@
             "name": "TimeRange",
             "type": 4,
             "value": {
-              "durationMs": 172800000
+              "durationMs": 86400000
             },
             "typeSettings": {
               "selectableValues": [
@@ -696,7 +696,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "DellDriverInstalled_CL\r\n| where DriverName_s in ({DriverName})\r\n    | where DriverVersion_s in ({DriverVersion})\r\n    | where DriverCategory_s in ({DriverCategory})\r\n| distinct ComputerName_s, DriverName_s, DriverVersion_s\r\n| summarize count () by DriverName_s, DriverVersion_s\r\n| sort by DriverName_s asc, DriverVersion_s desc\r\n",
+        "query": "DellDriverInstalled_CL\r\n| where DriverName_s in ({DriverName})\r\n    | where DriverVersion_s in ({DriverVersion})\r\n    | where DriverCategory_s in ({DriverCategory})\r\n    | where ComputerName_s in ({ComputerName})\r\n| distinct ComputerName_s, DriverName_s, DriverVersion_s\r\n| summarize count () by DriverName_s, DriverVersion_s\r\n| sort by DriverName_s asc, DriverVersion_s desc\r\n",
         "size": 0,
         "title": "Installed Drivers",
         "timeContext": {
