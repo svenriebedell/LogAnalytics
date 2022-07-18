@@ -56,7 +56,7 @@ Video:
 ![4B2FF917-2ECC-4B62-A6CE-CEC15CEF47ED](https://user-images.githubusercontent.com/99394991/179505666-a428cf75-8561-4bf8-8e6d-c330801b61b3.GIF)
 
 
-## Dell BIOS Dashboard 
+## Dell BIOS Dashboard (is following)
 
 The PowerShell Script uses Dell WMI (Windows Management Instrumentation) queries and Dell Trusted Device Agent to collect all BIOS Settings and check status of BIOS security features. 
 
