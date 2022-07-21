@@ -117,7 +117,8 @@ $DeviceSKU = $deviceData.CsSystemSKUNumber
 
 $BIOSData = Get-CimInstance -Namespace root/DCIM/SYSMAN/biosattributes -ClassName EnumerationAttribute
 $BIOSInteger = Get-CimInstance -Namespace root/DCIM/SYSMAN/biosattributes -ClassName IntegerAttribute
-$BIOSCollection = Get-CimInstance -Namespace root/DCIM/SYSMAN/biosattributes -ClassName CollectionAttribute
+$BIOSString = Get-CimInstance -Namespace root/DCIM/SYSMAN/biosattributes -ClassName StringAttribute
+
 
 
 #Prepare the Table Array for log analytics
@@ -144,10 +145,13 @@ foreach ($Setting in $BIOSData)
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'CurrentValue' -Value $Setting.CurrentValue -Force                    
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DefaultValue' -Value $Setting.DefaultValue -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DisplayName' -Value $Setting.DisplayName -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'InstanceName' -Value $Setting.InstanceName -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Modifiers' -Value $Setting.Modifiers -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'PossibleValue' -Value $Setting.PossibleValue -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'PossibleValueCount' -Value $Setting.PossibleValueCount -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ReadOnly' -Value $Setting.ReadOnly -Force                    
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ValueModifierCount' -Value $Setting.ValueModifierCount -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ValueModifiers' -Value $Setting.ValueModifiers -Force
 
     $BIOSArray = $BIOSArray + $BIOSArrayTemp
 
@@ -175,12 +179,13 @@ foreach ($Setting in $BIOSInteger)
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'CurrentValue' -Value $Setting.CurrentValue -Force                    
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DefaultValue' -Value $Setting.DefaultValue -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DisplayName' -Value $Setting.DisplayName -Force
-    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ReadOnly' -Value $Setting.ReadOnly -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'InstanceName' -Value $Setting.InstanceName -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'LowerBound' -Value $Setting.LowerBound -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Modifiers' -Value $Setting.Modifiers -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ReadOnly' -Value $Setting.ReadOnly -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ScalarIncrement' -Value $Setting.ScalarIncrement -Force                    
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'UpperBound' -Value $Setting.UpperBound -Force
-    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DisplayName' -Value $Setting.DisplayName -Force
-    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ReadOnly' -Value $Setting.ReadOnly -Force                   
+                  
 
     # Transfer temp date to array
     $BIOSArray = $BIOSArray + $BIOSArrayTemp
@@ -190,7 +195,7 @@ foreach ($Setting in $BIOSInteger)
 
 
 # select $BIOSCollection values
-foreach ($Setting in $BIOSCollection)
+foreach ($Setting in $BIOSString)
     {
   
     #generate a new Temp object
@@ -205,11 +210,16 @@ foreach ($Setting in $BIOSCollection)
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
     # select BIOS settings on Device
-    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'AttributeCount' -Value $Setting.AttributeCount -Force
-    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'AttributeName' -Value $Setting.AttributeName -Force                    
-    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Attributes' -Value $Setting.Attributes -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'AttributeName' -Value $Setting.AttributeName -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'CurrentValue' -Value $Setting.CurrentValue -Force                    
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DefaultValue' -Value $Setting.DefaultValue -Force
     $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DisplayName' -Value $Setting.DisplayName -Force
-    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ReadOnly' -Value $Setting.ReadOnly -Force            
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'InstanceName' -Value $Setting.InstanceName -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'MaxLength' -Value $Setting.MaxLength -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'MinLength' -Value $Setting.MinLength -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Modifiers' -Value $Setting.Modifiers -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ReadOnly' -Value $Setting.ReadOnly -Force
+             
 
     # Transfer temp date to array
     $BIOSArray = $BIOSArray + $BIOSArrayTemp
