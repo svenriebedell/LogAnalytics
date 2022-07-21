@@ -22,21 +22,21 @@ limitations under the License.
 1.0.0   inital version
 
 Knowing Issues
--   If a app in learning modus without process path the app fields for upload are not correct. The reason for app without process path are e.g. configure learning app by script without check if app is installed on the device.
+-  tbd
 #>
 
 #>
 
 <#
 .Synopsis
-   This PowerShell collecting App Learing and App Profile form Dell Optimizer and upload these informations to LogAnalytics (portal.azure.com)
-   IMPORTANT: This script need to install Dell Optimizer or first otherwise you will get no details about installed drivers
+   This PowerShell collecting BIOS settings by WMI request and upload these informations to LogAnalytics (portal.azure.com)
+   IMPORTANT: This script need Dell Business Device from 2018 or younger otherwise WMI is not supported
    IMPORTANT: LogAnalytics is a service from Microsoft and is NOT free of charge please checking your MS contracts if you have this service availible otherwise you need to order this service.
    IMPORTANT: This script does not reboot the system to apply or query system.
    IMPORTANT: This script is supporting Dell Business Devices only (Optiplex, Precision, Latitude and Mobile XPS) which are support Dell Optimizer application
 
 .DESCRIPTION
-   This PowerShell is starting the Dell Optimizer and collect all application settings excl. Applications performance and using the LogAnalytics API to upload all informations directly to portal.azure.com / LogAnalytics Service.
+   This PowerShell make WMI request to get all BIOS Settings of this Device and using the LogAnalytics API to upload all informations directly to portal.azure.com / LogAnalytics Service.
    
 #>
 
