@@ -46,7 +46,9 @@ Knowing Issues
 # Log analytics part
 $CustomerId = "cb9801e8-b5b0-4dfe-ab1e-ff8a17642010"
 $SharedKey = 'y15hSyg+5xekllOCyIxIW8LbuipepJCiR6ToGCfu5Umi5lqhaSCr19toWrGGtJQ5REcV1TeQCZaPvxfhwfgepw=='
-$LogType = "DellBIOSSetting"
+$LogType1 = "DellBIOSSetting"   # Table for WMI BIOS Settings
+$LogType2 = "DellBIOSPassword"  # Table for WMI BIOS Password Security
+$LogType3 = "DellSafeBIOS"      # Table for MS Event for Dell SafeBIOS
 $TimeStampField = ""
 #***********************************************************************************************************
 
@@ -113,12 +115,12 @@ $DeviceSerie = ($deviceData.CsModel).Split(" ")[0]
 $ServiceTag = $deviceData.BiosSeralNumber
 $DeviceSKU = $deviceData.CsSystemSKUNumber
 
+####### Section Log Analytics DellBIOSSetting custom Table ##########
 # select BIOS settings
 
 $BIOSData = Get-CimInstance -Namespace root/DCIM/SYSMAN/biosattributes -ClassName EnumerationAttribute
 $BIOSInteger = Get-CimInstance -Namespace root/DCIM/SYSMAN/biosattributes -ClassName IntegerAttribute
 $BIOSString = Get-CimInstance -Namespace root/DCIM/SYSMAN/biosattributes -ClassName StringAttribute
-
 
 
 #Prepare the Table Array for log analytics
@@ -231,7 +233,153 @@ foreach ($Setting in $BIOSString)
 # Convert Array to JSON format
 $BIOSInfoJson = $BIOSArray | ConvertTo-Json
 
-<#
+####### End of collect Data for DellBIOSSetting Table ##########
+################################################################
+
+####### Section Log Analytics DellBIOSSetting custom Table ##########
+# select BIOS Password Settings
+
+$BIOSPassword = Get-CimInstance -Namespace root/DCIM/SYSMAN/wmisecurity -ClassName PasswordObject
+
+
+#Prepare the Table Array for log analytics
+$BIOSArray = @()
+
+
+# select $BIOSData values
+foreach ($Setting in $BIOSPassword)
+    {
+  
+    #generate a new Temp object
+    $BIOSArrayTemp = New-Object PSObject
+        
+    # build a temporary array
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
+    # select BIOS settings on Device
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Active' -Value $Setting.Active -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'InstanceName' -Value $Setting.InstanceName -Force
+    # Change 0 and 1 to disabled / enabled for better view later
+    $IsPasswordSet = Switch ($Setting.IsPasswordSet)
+        {
+        0 {"Disabled"}
+        1 {"Enabled"}
+        }
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'IsPasswordSet' -Value $IsPasswordSet -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'MaximumPasswordLength' -Value $Setting.MaximumPasswordLength -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'MinimumPasswordLength' -Value $Setting.MinimumPasswordLength -Force
+    $BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'NameId' -Value $Setting.NameId -Force
+
+    $BIOSArray = $BIOSArray + $BIOSArrayTemp
+
+
+    }
+
+    
+# Convert Array to JSON format
+$BIOSPasswordJson = $BIOSArray | ConvertTo-Json
+
+####### End of collect Data for DellBIOSPassword Table ##########
+################################################################
+
+####### Section Log Analytics DellSafeBIOS custom Table ##########
+# select SafeBIOS Risk Assessment from last check
+
+# Function for snipping SafeBIOS values from the MS Event
+function Get-SafeBIOSValue{
+    
+    # Parameter
+    param(
+        [string]$Value
+        
+         )
+
+    # Collect last MS Event for Trusted Device | Security Assessment
+    $SelectLastLog = Get-EventLog -LogName Dell -Source "Trusted Device | Security Assessment" -Newest 1 | select -ExpandProperty message
+    
+    # Prepare value for single line and value
+     
+    $ScoreValue = ($SelectLastLog.Split([Environment]::newline) | Select-String $Value)
+    $ScoreLine = ($ScoreValue.Line).Split(' ')[-1]
+
+    $ScoreValue = $ScoreLine
+
+    Return $ScoreValue
+     
+}
+
+#Prepare variables
+$OutputStatement = "Device Details: "
+$Safe_Score = "Security Score: "
+$Safe_Antivirus = "Antivirus: "
+$Safe_AdminPW = "BIOS PW: "
+$Safe_BIOSVerify = "BIOS Verification: "
+$Safe_MEVerify = "ME Verification: "
+$Safe_DiskEncrypt = "Disk Encryption: "
+$Safe_Firewall = "Firewall: "
+$Safe_IoA = "Indicators of Attack: "
+$Safe_TPM = "TPM: "
+$Safe_Assessment = "Assessment Result: "
+
+#Select score values
+$Safe_Score_Value = Get-SafeBIOSValue -Value 'Score'
+$Safe_Antivirus_Value = Get-SafeBIOSValue -Value 'Antivirus'
+$Safe_AdminPW_Value = Get-SafeBIOSValue -Value 'BIOS Admin'
+$Safe_BIOSVerify_Value = Get-SafeBIOSValue -Value 'BIOS Verification'
+$Safe_MEVerify_Value = Get-SafeBIOSValue -Value 'ME Verification'
+$Safe_DiskEncrypt_Value = Get-SafeBIOSValue -Value 'Disk Encryption'
+$Safe_Firewall_Value = Get-SafeBIOSValue -Value 'Firewall solution'
+$Safe_IOA_Value = Get-SafeBIOSValue -Value 'Indicators of Attack'
+$Safe_TPM_Value = Get-SafeBIOSValue -Value 'TPM enabled'
+$Safe_Assessment_Value = Get-SafeBIOSValue -Value 'Result:' 
+
+#Prepare the Table Array for log analytics
+$BIOSArray = @()
+
+#generate a new Temp object
+$BIOSArrayTemp = New-Object PSObject
+
+# Prepare output string
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
+# select BIOS settings on Device
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Score' -Value $Safe_Score_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Antivirus' -Value $Safe_Antivirus_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'AdminPWD' -Value $Safe_AdminPW_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'BIOSVerification' -Value $Safe_BIOSVerify_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'MEVerification' -Value $Safe_MEVerify_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'DiskEncryption' -Value $Safe_DiskEncrypt_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Firewall' -Value $Safe_Firewall_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'IOA' -Value $Safe_IOA_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'TPM' -Value $Safe_TPM_Value -Force
+$BIOSArrayTemp | Add-Member -MemberType NoteProperty -Name 'Result' -Value $Safe_Assessment_Value -Force
+
+$BIOSArray = $BIOSArray + $BIOSArrayTemp
+
+# Convert Array to JSON format
+$SafeBIOSJson = $BIOSArray | ConvertTo-Json
+
+####### End of collect Data for DellSafeBIOS Table    ##########
+################################################################
+
+
+
+################################################################
+#######        Transfer Data to log Analytics         ##########
+
+##### Table DellBIOSSettings
+$LogType = $LogType1
+
 $params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
@@ -240,4 +388,33 @@ $params = @{
 }
 
 $LogResponse = Post-LogAnalyticsData @params
-#>
+
+##### End Table DellBIOSSettings
+
+##### Table DellBIOSPassword
+$LogType = $LogType2
+
+$params = @{
+    CustomerId = $customerId
+    SharedKey  = $sharedKey
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($BIOSPasswordJson))
+    LogType    = $LogType 
+}
+
+$LogResponse = Post-LogAnalyticsData @params
+
+##### End Table DellBIOSPassword
+
+##### Table DellSafeBIOS
+$LogType = $LogType3
+
+$params = @{
+    CustomerId = $customerId
+    SharedKey  = $sharedKey
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($SafeBIOSJson))
+    LogType    = $LogType 
+}
+
+$LogResponse = Post-LogAnalyticsData @params
+
+##### End Table DellSafeBIOS
