@@ -125,7 +125,6 @@
               "Communications",
               "Serial ATA",
               "Driver",
-              "Firmware",
               "Audio",
               "Video"
             ],
@@ -206,6 +205,47 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Severity",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "NoUpdate",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Recommended",
+                    "representation": "2",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Urgent",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Optional",
+                    "representation": "1",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "3",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
           "sortBy": [
             {
               "itemKey": "Computer",
@@ -478,7 +518,23 @@
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "piechart"
+        "visualization": "piechart",
+        "chartSettings": {
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Recommended",
+              "color": "yellow"
+            },
+            {
+              "seriesName": "Urgent",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "NoUpdate",
+              "color": "green"
+            }
+          ]
+        }
       },
       "customWidth": "50",
       "name": "query - 12",
@@ -526,7 +582,23 @@
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "timechart"
+        "visualization": "timechart",
+        "chartSettings": {
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Recommended",
+              "color": "yellow"
+            },
+            {
+              "seriesName": "Urgent",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "NoUpdate",
+              "color": "green"
+            }
+          ]
+        }
       },
       "name": "query - 12 - Copy - Copy",
       "styleSettings": {
@@ -846,7 +918,7 @@
             "type": 2,
             "isRequired": true,
             "query": "DellDriverInstalled_CL\r\n| distinct DriverName_s",
-            "value": "Dell Command | C",
+            "value": "Dell Command | Configure",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
