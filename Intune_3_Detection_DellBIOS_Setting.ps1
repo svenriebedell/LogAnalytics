@@ -305,7 +305,8 @@ function Get-SafeBIOSValue{
     # Prepare value for single line and value
      
     $ScoreValue = ($SelectLastLog.Split([Environment]::newline) | Select-String $Value)
-    $ScoreLine = ($ScoreValue.Line).Split(' ')[-1]
+    $ScoreLine = ($ScoreValue.Line).Split(':')
+    $ScoreLine = ($ScoreLine.Split(':'))[-1].Trim()
 
     $ScoreValue = $ScoreLine
 
