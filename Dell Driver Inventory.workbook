@@ -207,6 +207,102 @@
         "gridSettings": {
           "formatters": [
             {
+              "columnMatch": "ModelGroup",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Latitude",
+                    "representation": "green",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Precision",
+                    "representation": "gray",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Optiplex",
+                    "representation": "turquoise",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "purple",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "Category",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "no updates",
+                    "representation": "green",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Chipset",
+                    "representation": "grayBlue",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Systems Management",
+                    "representation": "orange",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Serial ATA",
+                    "representation": "turquoise",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Security",
+                    "representation": "redBright",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Audio",
+                    "representation": "yellow",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Docks/Stands",
+                    "representation": "purpleDark",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Communications",
+                    "representation": "magenta",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "blue",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
               "columnMatch": "Severity",
               "formatter": 18,
               "formatOptions": {
@@ -248,14 +344,14 @@
           ],
           "sortBy": [
             {
-              "itemKey": "Computer",
+              "itemKey": "$gen_thresholds_Category_7",
               "sortOrder": 1
             }
           ]
         },
         "sortBy": [
           {
-            "itemKey": "Computer",
+            "itemKey": "$gen_thresholds_Category_7",
             "sortOrder": 1
           }
         ]
@@ -306,7 +402,15 @@
             "itemKey": "DeviceModel_s",
             "sortOrder": 2
           }
-        ]
+        ],
+        "chartSettings": {
+          "seriesLabelSettings": [
+            {
+              "seriesName": "no updates",
+              "color": "green"
+            }
+          ]
+        }
       },
       "customWidth": "50",
       "name": "StatusUpdate"
@@ -323,6 +427,44 @@
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "table",
         "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "DriverMissingSeverity_s",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Recommended",
+                    "representation": "2",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Urgent",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "count_",
+              "formatter": 3,
+              "formatOptions": {
+                "min": 0,
+                "max": 10,
+                "palette": "greenRed"
+              }
+            }
+          ],
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -918,7 +1060,7 @@
             "type": 2,
             "isRequired": true,
             "query": "DellDriverInstalled_CL\r\n| distinct DriverName_s",
-            "value": "Dell Command | Configure",
+            "value": "Dell SupportAssist OS Recovery Plugin for Dell Update",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
