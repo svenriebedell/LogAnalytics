@@ -44,8 +44,8 @@ Knowing Issues
 
 #***************************************** Part to fill ***************************************************
 # Log analytics part
-$CustomerId = "cb9801e8-b5b0-4dfe-ab1e-ff8a17642010"
-$SharedKey = 'y15hSyg+5xekllOCyIxIW8LbuipepJCiR6ToGCfu5Umi5lqhaSCr19toWrGGtJQ5REcV1TeQCZaPvxfhwfgepw=='
+$CustomerId = "Your LogAnalytics ID"
+$SharedKey = "your LogAnalytics Key"
 $LogType = "DellOptimizerSettings"
 $TimeStampField = ""
 #***********************************************************************************************************
