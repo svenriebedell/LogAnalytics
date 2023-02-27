@@ -1,0 +1,872 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Dell Optimizer Dashboard\n---\n\nThis Dashboard is showing the Optimizer configuration on a client and the application performance process. For all infomations you need to run 2 specific powershell script and need to install Dell Optimizer on your Dell clients."
+      },
+      "name": "text - 2"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Compliance Section\r\n\r\nIdentify device with missing applications in Learning/Optimized mode and wrong Dell Optimizer settings. This Section shows only device if configurations are missing.\r\n\r\n### Setting Compliance Base\r\n- Telemetry.State -- Disable, to deactivate sending Telemetry data to vendor\r\n- DellOptimizerConfiguration.BetaFeatures -- Disable, not using any BetaFeatures on Enterprise device\r\n\r\nIdentified device need a setting change.\r\n\r\n### Applications Compliance Base\r\nFollowing Applications need to be learned by Dell Optimizer.\r\n\r\nIdentified device need a setting change."
+      },
+      "name": "text - 25"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "f3a072b2-d45c-4150-9b5f-6d3b51283074",
+            "version": "KqlParameterItem/1.0",
+            "name": "MandetoryApp1",
+            "type": 2,
+            "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*) by Name_s\r\n| distinct Name_s\r\n| order by Name_s asc",
+            "value": null,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "MandetoryApp2",
+            "type": 2,
+            "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*) by Name_s\r\n| distinct Name_s\r\n| order by Name_s asc",
+            "value": null,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "9dbc4ac7-7f7b-4310-9cb1-ed58f18f19a1"
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "MandetoryApp3",
+            "type": 2,
+            "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*) by Name_s\r\n| distinct Name_s\r\n| order by Name_s asc",
+            "value": null,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "1fe38d4f-6cc3-4013-8940-00344fe9419a"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 27"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerApp_CL\r\n| summarize arg_max(TimeGenerated,*)  by ComputerName_s, Name_s, ProcessName_s\r\n| summarize FilterApp = makelist(Name_s) by ComputerName_s, TimeGenerated,DeviceModel_s\r\n| where not(FilterApp has_any(\"{MandetoryApp1}\"))\r\nor not(FilterApp has_any(\"{MandetoryApp2}\"))\r\nor not(FilterApp has_any(\"{MandetoryApp3}\"))\r\n| summarize arg_max(TimeGenerated,*)  by ComputerName_s\r\n| project Computer = ComputerName_s, AppKnown = FilterApp, LastScan = TimeGenerated, DeviceModel = DeviceModel_s\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
+        "size": 0,
+        "title": "Devices missing mandetory App for optimized process",
+        "noDataMessage": "no data",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "sortBy": []
+      },
+      "customWidth": "50",
+      "name": "Query devices without software",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where Name_s contains (\"DellOptimizerConfiguration.BetaFeatures\") and Value_s <> (\"False\")\r\nor Name_s contains (\"Telemetry.State\") and Value_s <> (\"False\")\r\n// add additional checks if you need\r\n| summarize arg_max(TimeGenerated,*) by ComputerName_s, Name_s, Value_s\r\n| order by ComputerName_s asc\r\n| project Computer = ComputerName_s, Settings = Name_s, WrongValue = Value_s, DeviceModel = DeviceModel_s, LastLoginUser = UserName_s",
+        "size": 0,
+        "title": "Device with wrong Optimizer settings",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "50",
+      "name": "Query wrong settings",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Thermal Section\r\n\r\nIt show the Thermal Setting of a Dell Device."
+      },
+      "name": "text - 22"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "964d7f0e-2646-43bd-8f69-e8c8d0ac8d87",
+            "version": "KqlParameterItem/1.0",
+            "name": "ThermalSetting",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\"SystemPowerConfiguration.ThermalMode\")\r\n| distinct Value_s",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "DeviceModel",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\"SystemPowerConfiguration.ThermalMode\")\r\n| distinct DeviceModel_s",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "a31a8b3a-99a0-45c3-8e50-f3e9e792b6db"
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "ProductLine",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\"SystemPowerConfiguration.ThermalMode\")\r\n| distinct ProductLine_s",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "6b351ae3-a4a3-4feb-88ca-751a71cfc4b1",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "Computer",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\"SystemPowerConfiguration.ThermalMode\")\r\n| distinct ComputerName_s",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "a390b2eb-8f01-4a68-8016-f5bbaeb8dff3"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 21"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where ComputerName_s in ({Computer})\r\n| where Value_s in ({ThermalSetting})\r\n| where DeviceModel_s in ({DeviceModel})\r\n| where ProductLine_s in ({ProductLine})\r\n| where Name_s has (\"SystemPowerConfiguration.ThermalMode\")\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| project Computer = ComputerName_s, Setting =  Value_s, DeviceModel = DeviceModel_s, ProductLine = ProductLine_s",
+        "size": 0,
+        "title": "Thermal Profil on Device",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "50",
+      "name": "Query Thermal",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\"SystemPowerConfiguration.ThermalMode\")\r\n| where ComputerName_s in ({Computer})\r\n| where Value_s in ({ThermalSetting})\r\n| where DeviceModel_s in ({DeviceModel})\r\n| where ProductLine_s in ({ProductLine})\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| summarize Count = count() by Setting =  Value_s, Computer = ComputerName_s, DeviceModel = DeviceModel_s, ProductLine = ProductLine_s\r\n",
+        "size": 0,
+        "title": "Thermal Profil Summary",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Setting"
+            ],
+            "expandTopLevel": false
+          }
+        }
+      },
+      "customWidth": "50",
+      "name": "Query Thermal Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\"SystemPowerConfiguration.ThermalMode\")\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| summarize Count = count() by Setting =  Value_s, Computer = ComputerName_s, DeviceModel = DeviceModel_s, ProductLine = ProductLine_s\r\n| render piechart\r\n",
+        "size": 0,
+        "title": "Thermal Profil Summary Chart",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "50",
+      "name": "Query Thermal Summary Chart",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Installed Dell Optimizer Overview\r\n\r\nIt shows on which models, series and Version you are using Dell Optimizer."
+      },
+      "name": "text - 23"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\n| summarize count() by DeviceModel_s\n| render piechart\n\n",
+        "size": 0,
+        "title": "Dell Optimizer by Dell Model installed",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "50",
+      "name": "Quantity by Model",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\n| summarize count() by ProductLine_s\n| render piechart\n\n",
+        "size": 0,
+        "title": "Dell Optimizer by Dell Model Series installed",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "50",
+      "name": "Quantity by model series",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "3117c567-e533-48ef-8789-62b3f9a7ce94",
+            "version": "KqlParameterItem/1.0",
+            "name": "Computer",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| distinct ComputerName_s",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "id": "e24c8a8c-5f01-48c6-8680-dde7ab704154",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "value": {
+              "durationMs": 2592000000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                }
+              ]
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 3"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerApp_CL\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| summarize count() by Version_s\r\n| render piechart",
+        "size": 0,
+        "title": "Summary installed versions Dell Optimizer",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "50",
+      "name": "Query DO Versions",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let startTime = now(-14d);\r\nlet endTime = now();\r\nDellOptimizerApp_CL\r\n| make-series num=dcount(Version_s) on TimeGenerated in range(startTime, endTime, 1d) by Version_s, ComputerName_s\r\n| render areachart",
+        "size": 0,
+        "aggregation": 5,
+        "title": "Dell Optimizer installed Version (last 14 days)",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "Query Installed Versions"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Section of Dell Optimizer Settings\r\n\r\nHere you will see all configurtion options a client will support with the Dell Optimizer and how is configured at the moment."
+      },
+      "name": "text - 24"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "49d2d3b8-465d-4e53-9c5c-20fc662c0ed0",
+            "version": "KqlParameterItem/1.0",
+            "name": "Computer",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| summarize arg_max (TimeGenerated,*) by ComputerName_s\r\n| project ComputerName_s",
+            "value": [
+              "SRLAB-1X752J3"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "id": "6c3f9126-4ac3-4322-9d8f-7f8744c6bf18",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "value": {
+              "durationMs": 172800000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ]
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 28"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where ComputerName_s in ({Computer})\r\n| where Name_s has (\".State\")\r\n| summarize arg_max (TimeGenerated,*) by Name_s, ComputerName_s\r\n| project Feature = Name_s, Status = Value_s, Description = Description_s, Computer = ComputerName_s",
+        "size": 0,
+        "title": "Feature support enabled on Device",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "sortBy": [
+            {
+              "itemKey": "Feature",
+              "sortOrder": 1
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "Feature",
+            "sortOrder": 1
+          }
+        ]
+      },
+      "customWidth": "50",
+      "name": "Query feature enbled"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where ComputerName_s in ({Computer})\r\n| summarize arg_max (TimeGenerated,*) by Name_s, ComputerName_s, Value_s\r\n| sort by Name_s asc\r\n| project Computer = ComputerName_s, Setting = Name_s, Value = Value_s, Lockstatus = IsLocked_s, ReadOnly = IsReadOnly_s, Options = SupportedValues_s, LastScan = TimeGenerated\r\n\r\n\r\n",
+        "size": 0,
+        "title": "Last Dell Optimizer settings on Device",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "sortBy": [
+            {
+              "itemKey": "Options",
+              "sortOrder": 1
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "Options",
+            "sortOrder": 1
+          }
+        ]
+      },
+      "customWidth": "50",
+      "name": "Query Device Optimizer setting overview",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "cfe0f785-784a-49e1-a076-0ae36525a8e9",
+            "version": "KqlParameterItem/1.0",
+            "name": "Feature",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\".State\")\r\n| distinct Name_s",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "Status",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\".State\")\r\n| distinct Value_s",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "id": "da8c93ed-5b2e-40d5-8e90-f315cc6d7f67"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 15"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\".State\")\r\n| where Name_s in ({Feature})\r\n| where Value_s in ({Status})\r\n| summarize arg_max (TimeGenerated,*) by Name_s, ComputerName_s, Value_s\r\n| summarize Status = count() by Name_s, Value_s\r\n| extend NameValue = strcat(Name_s, \" (\", Value_s,\")\")\r\n| project NameValue, Status\r\n| render columnchart",
+        "size": 2,
+        "title": "Fleet check feature enabled/disabled",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "sortBy": [],
+        "tileSettings": {
+          "showBorder": false
+        },
+        "graphSettings": {
+          "type": 0
+        }
+      },
+      "name": "Query check offened feature is disabled"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerSettings_CL\r\n| where Name_s has (\".State\")\r\n| where Name_s in ({Feature})\r\n| where Value_s in ({Status})\r\n| summarize arg_max (TimeGenerated,*) by Name_s, ComputerName_s, Value_s\r\n| summarize Status = count() by Name_s, Value_s, ComputerName_s\r\n| project Name_s, Value_s, Status, ComputerName_s",
+        "size": 2,
+        "title": "Fleet check feature enabled/disabled",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Name_s",
+              "Value_s"
+            ],
+            "expandTopLevel": true
+          }
+        },
+        "sortBy": [],
+        "tileSettings": {
+          "showBorder": false
+        },
+        "graphSettings": {
+          "type": 0
+        }
+      },
+      "customWidth": "50",
+      "name": "Query check offened feature is disabled - Copy",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Application Performance section\r\n\r\nThis part show which Applications are in learning modus or have existing profiles."
+      },
+      "name": "text - 8"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerApp_CL\r\n| summarize arg_max (TimeGenerated,*) by ProcessName_s, ComputerName_s\r\n| summarize Count = count() by ProcessName_s, Name_s\r\n| project ProfileName = Name_s, Process = ProcessName_s, Count\r\n| limit 10\r\n",
+        "size": 0,
+        "title": "Top 10 Applications learned by Dell Optimizer",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "sortBy": []
+      },
+      "customWidth": "50",
+      "name": "Query most used app",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerApp_CL\r\n| summarize arg_max (TimeGenerated,*) by ProcessName_s, ComputerName_s\r\n| summarize count() by Process = ProcessName_s, ProfileName = Name_s\r\n| limit 10\r\n",
+        "size": 0,
+        "title": "Top 10 Applications learned by Dell Optimizer",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "sortBy": []
+      },
+      "customWidth": "50",
+      "name": "Query most used app - Copy",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "23b13891-cd14-4f76-8fc4-f2149261a82a",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 86400000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 16"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerApp_CL\r\n| where Status_s in (\"Learning\")\r\n| summarize arg_max(TimeGenerated,*) by ComputerName_s, ProcessName_s, ProcessPath_s\r\n| project ProcessName_s, Name_s, Status_s, PercentLearned_s, DeviceModel_s, ComputerName_s\r\n",
+        "size": 0,
+        "title": "Application in learning modus by Dell Optimizer",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "sortBy": [
+            {
+              "itemKey": "DeviceModel_s",
+              "sortOrder": 1
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "DeviceModel_s",
+            "sortOrder": 1
+          }
+        ]
+      },
+      "customWidth": "50",
+      "name": "Query App Learn",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "DellOptimizerApp_CL\r\n| where Status_s in (\"Optimized\")\r\n| summarize arg_max(TimeGenerated,*) by ComputerName_s, Name_s\r\n| project Process = ProcessName_s, ProfileName = Name_s, Status = Status_s, Model = DeviceModel_s, Computer = ComputerName_s, Priotiy = Priority_s, ProfileGUID = ProfileGuid_g\r\n",
+        "size": 0,
+        "title": "Application optimized by Dell Optimizer",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "sortBy": []
+      },
+      "customWidth": "50",
+      "name": "Query App Optimized",
+      "styleSettings": {
+        "showBorder": true
+      }
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/124636a2-a349-4c59-b0b3-6769ed6dc6f9/resourcegroups/dell_itpro_lab/providers/microsoft.operationalinsights/workspaces/intunelog"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
