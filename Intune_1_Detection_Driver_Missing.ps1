@@ -27,7 +27,6 @@ Knowing Issues
 -   tbd
 #>
 
-#>
 
 <#
 .Synopsis
