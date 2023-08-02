@@ -1,7 +1,7 @@
 <#
 _author_ = Sven Riebe <sven_riebe@Dell.com>
 _twitter_ = @SvenRiebe
-_version_ = 1.0
+_version_ = 1.0.1
 _Dev_Status_ = Test
 Copyright © 2022 Dell Inc. or its subsidiaries. All Rights Reserved.
 
@@ -17,6 +17,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 #>
+
+<#Version Changes
+
+1.0.0   inital version
+1.0.1   correction if folder c:\temp is missing on device
+
+Knowing Issues
+-   tbd
+#>
+
 
 <#
 .Synopsis
@@ -89,6 +99,15 @@ Function Post-LogAnalyticsData($customerId, $sharedKey, $body, $logType)
 
 }
 
+function get-folderstatus 
+    {
+        param 
+            (
+                [string]$FolderPath
+            )
+        
+        Test-Path -Path $FolderPath
+    }
 
 # Prepare Device basic datas
 $deviceData = Get-ComputerInfo
@@ -103,7 +122,73 @@ $DeviceSKU = $deviceData.CsSystemSKUNumber
 $OSVersion = $deviceData.OsVersion
 $WinEdition = $deviceData.OsName
 
-Start-Process 'C:\Program Files (x86)\Dell\UpdateService\Service\InvColPC.exe' -ArgumentList '-outc=c:\Temp\inventory' -Wait
+# Checking if C:\Temp is available and if not generate the folder.
+$CheckTempFolder = get-folderstatus -FolderPath C:\Temp
+
+If ($CheckTempFolder -eq $true)
+    {
+
+        Write-Host "Folder c:\temp exist" -BackgroundColor Green
+        
+    }
+else 
+    {
+        
+        Write-Host "Folder c:\temp does not exist" -BackgroundColor red
+        New-Item -Path 'C:\Temp' -ItemType Directory
+
+    }
+
+# Checking if program InvColPC.exe is available
+$CheckInvColPC = get-folderstatus -FolderPath 'C:\Program Files (x86)\Dell\UpdateService\Service\InvColPC.exe'
+
+If ($CheckInvColPC -eq $true)
+    {
+
+        Write-Host "Program InvColPC.exe is ready to use" -BackgroundColor Green
+        
+    }
+else 
+    {
+        
+        Write-Host "Program InvColPC.exe is missing. Starting Dell Command | Update to download program in background" -BackgroundColor red
+        
+        # Checking installation of UWP or classic of Dell Command | Update and start a standard scan if application is available.
+        $DCUPathCheck = get-folderstatus -FolderPath 'C:\Program Files (x86)\Dell\CommandUpdate\'
+
+        If ($DCUPathCheck -eq 'True')
+            {
+            # run a driver scan with Dell Command Update (based on version 32/64)
+            Write-Host "Start Dell Command | Update Classic scan"
+            $DCUScan = & 'C:\Program Files (x86)\Dell\CommandUpdate\dcu-cli.exe' /scan
+            }
+        Else
+            {
+
+            $DCUPathCheck = get-folderstatus -FolderPath 'C:\Program Files\Dell\CommandUpdate\'
+            
+            If ($DCUPathCheck -eq 'True')
+                {
+                # run a driver scan with Dell Command Update (based on version 32/64)
+                Write-Host "Start Dell Command | Update UWP scan"
+                $DCUScan = & 'C:\Program Files\Dell\CommandUpdate\dcu-cli.exe' /scan
+                }
+
+            Else
+                {
+
+                Write-Host "No DCU installed. You need to install first" -BackgroundColor red
+
+                Exit = 1
+
+                }
+
+    }
+
+    }
+
+# Collecting driver datas for uplaod to MS Log Analytics
+Start-Process 'C:\Program Files (x86)\Dell\UpdateService\Service\InvColPC.exe' -ArgumentList '-outc=c:\Temp\inventory' -Wait -NoNewWindow
 [xml]$DriverInventory = Get-Content C:\Temp\inventory
 [Array]$DriverIST = $DriverInventory.SVMInventory.Device.application |Select-Object Display, Version, componentType | Sort-Object Display
 Start-Sleep -Seconds 5

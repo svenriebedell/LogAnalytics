@@ -113,17 +113,7 @@
             "delimiter": ",",
             "query": "DellDriverMissing_CL\r\n| distinct DriverMissingCategory_s",
             "value": [
-              "BIOS",
-              "no updates",
-              "Security",
-              "Systems Management",
-              "Docks/Stands",
-              "Application",
-              "Network",
-              "Chipset",
-              "Communications",
-              "Audio",
-              "Video"
+              "value::all"
             ],
             "typeSettings": {
               "additionalResourceOptions": [
@@ -183,6 +173,29 @@
             "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "id": "d0fa4c81-3905-4cba-bd07-990975e65734",
+            "version": "KqlParameterItem/1.0",
+            "name": "Email",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "IntuneDevices\r\n| distinct UPN",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ]
           }
         ],
         "style": "pills",
@@ -195,7 +208,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "DellDriverMissing_CL\r\n| where DriverMissingSeverity_s in ({Severity})\r\n| where DriverMissingCategory_s in ({Category})\r\n| where ComputerName_s in ({Computer})\r\n| where DeviceModel_s in ({Model})\r\n| summarize arg_max(TimeGenerated, *) by DriverMissingName_s\r\n| order by (SerialNo_s) asc\r\n| project Computer = ComputerName_s, ModelGroup = ProductLine_s, Model = DeviceModel_s, Name = DriverMissingName_s, ID = DriverMissingID_s, Version = DriverMissingVendorVersion_s, ReleaseDate = DriverMissingReleaseDate_s, Category = DriverMissingCategory_s, Severity = DriverMissingSeverity_s, Type = DriverMissingType_s, LastScan =  TimeGenerated, DriverDescription = DriverMissingDescription_s, ServiceTag = SerialNo_s, DownloadPath = DriverMissingPath_s, OnlineDetails = DriverMissingDetails_s, DeviceSKU = SystemID_s",
+        "query": "DellDriverMissing_CL\r\n| join kind=inner IntuneDevices on $left.ComputerName_s == $right.DeviceName\r\n| where DriverMissingSeverity_s in ({Severity})\r\n| where DriverMissingCategory_s in ({Category})\r\n| where ComputerName_s in ({Computer})\r\n| where DeviceModel_s in ({Model})\r\n| where UPN in ({Email})\r\n| summarize arg_max(TimeGenerated, *) by DriverMissingName_s\r\n| order by (SerialNo_s) asc\r\n| project Computer = ComputerName_s, Email = UPN, ModelGroup = ProductLine_s, Model = DeviceModel_s, Name = DriverMissingName_s, ID = DriverMissingID_s, Version = DriverMissingVendorVersion_s, ReleaseDate = DriverMissingReleaseDate_s, Category = DriverMissingCategory_s, Severity = DriverMissingSeverity_s, Type = DriverMissingType_s, LastScan =  TimeGenerated, DriverDescription = DriverMissingDescription_s, ServiceTag = SerialNo_s, DownloadPath = DriverMissingPath_s, OnlineDetails = DriverMissingDetails_s, DeviceSKU = SystemID_s",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "showExportToExcel": true,
@@ -802,9 +815,7 @@
             "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": [
-              "value::all"
-            ]
+            "value": null
           },
           {
             "id": "cc29c6c4-427e-45ba-8d28-10e404991e3f",
@@ -1057,7 +1068,7 @@
             "type": 2,
             "isRequired": true,
             "query": "DellDriverInstalled_CL\r\n| distinct DriverName_s",
-            "value": "Dell Command | Update for Windows Universal",
+            "value": null,
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -1096,7 +1107,6 @@
     }
   ],
   "fallbackResourceIds": [
-    "/subscriptions/124636a2-a349-4c59-b0b3-6769ed6dc6f9/resourcegroups/dell_itpro_lab/providers/microsoft.operationalinsights/workspaces/intunelog"
   ],
   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
 }
