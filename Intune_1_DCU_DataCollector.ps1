@@ -19,7 +19,7 @@ limitations under the License.
 
 <#Version Changes
 
-1.0.0   inital version
+1.0.0   inital version (relace Intune_1_Detection_Driver_Installed.ps1 and Intune_1_Detection_Driver_Missing.ps1)
 
 Knowing Issues
 -   tbd
@@ -127,14 +127,6 @@ Function Post-LogAnalyticsData($customerId, $sharedKey, $body, $logType)
 Function Get-MissingDriver
     {
 
-        # Test if Temp Path is existing if not generate this Path
-        $check_Temp_Folder = Test-Path -Path $Temp_Folder
-
-        if ($check_Temp_Folder -ne $true) 
-            {
-                New-Item -Path $Temp_Folder -ItemType Directory
-            }
-
         Set-Location -Path $DCUPath
         # DCU scan only generate a XML report with missing drivers
         Start-Process -FilePath $DCUProgramName -ArgumentList "/scan -report=$Temp_Folder" -Wait -WindowStyle Hidden
@@ -195,11 +187,14 @@ function New-MSEventLog
         Param (
 
                 [Parameter(Mandatory = $true)][string]$Message,
-                [Parameter(Mandatory = $true)][ValidateSet("12", "11", "13","14","10")][integer]$EventID,
+                [Parameter(Mandatory = $true)][ValidateSet("12", "11", "13","14","10")][long]$EventID,
                 [Parameter(Mandatory = $true)][ValidateSet("Error", "Information", "FailureAudit", "SuccessAudit", "Warning")][string]$EntryType
 
                 )
-
+        # add source to microsoft event
+        New-EventLog -LogName $MSEventLogName -Source $MSEventSource -ErrorAction Ignore
+        
+        # Writing Log to MS Event
         Write-EventLog -LogName $MSEventLogName -Source $MSEventSource -EntryType $EntryType -EventId $EventID -Message $Message
 
         Write-Host $Message
@@ -230,10 +225,10 @@ If (Get-DCU-Installed -eq $true)
         $EventMessage = [PSCustomObject]@{
             Process = "Check installation Dell Command | Update"
             Installed = $true
-            Status = "Starting collect Dell Command | Update datas"
+            Status = "Starting collect informations from Dell Command | Update"
        } | ConvertTo-Json
 
-       new-MSEventLog -EventId 12 -EntryType Error  -Message $EventMessage
+       new-MSEventLog -EventId 11 -EntryType Information  -Message $EventMessage
 
     }
 else 
@@ -248,6 +243,59 @@ else
 
        Exit 1
     }
+
+###############################
+#### Check Tempary Folder exist
+
+if ((Test-Path -Path $Temp_Folder) -eq $false)
+    {
+
+        $EventMessage = [PSCustomObject]@{
+            Process = "Check folder " + $Temp_Folder +" is available"
+            Exist = $false
+            Status = "Folder does not exist on device and will generated now"
+        } | ConvertTo-Json
+
+        new-MSEventLog -EventId 12 -EntryType Error -Message $EventMessage
+
+        New-Item -Path $Temp_Folder -ItemType Directory
+
+        if ((Test-Path -Path $Temp_Folder) -eq $false)
+            {
+                $EventMessage = [PSCustomObject]@{
+                    Process = "Generate Folder " + $Temp_Folder
+                    Exist = $false
+                    Status = "Failure to make directory " + $Temp_Folder + "Script stops by Exit 1"
+                } | ConvertTo-Json
+        
+                new-MSEventLog -EventId 12 -EntryType Error -Message $EventMessage
+
+                Exit 1
+            }
+        else 
+            {
+                $EventMessage = [PSCustomObject]@{
+                    Process = "Generate Folder " + $Temp_Folder
+                    Exist = $true
+                    Status = "Success to make directory " + $Temp_Folder
+                } | ConvertTo-Json
+        
+                new-MSEventLog -EventId 11 -EntryType Information -Message $EventMessage
+            }
+
+    }
+else 
+    {
+        $EventMessage = [PSCustomObject]@{
+            Process = "Check folder " + $Temp_Folder +" is available"
+            Exist = $true
+            Status = "Starting with collecting ComputerInformations"
+        } | ConvertTo-Json
+
+        new-MSEventLog -EventId 11 -EntryType Information -Message $EventMessage
+    }
+
+
 ##############################
 #### get computer informations
 $deviceData = Get-ComputerInfo
@@ -259,7 +307,8 @@ $Model = ($deviceData.CsModel)
 $DeviceSerie = ($deviceData.CsModel).Split(" ")[0]
 $ServiceTag = $deviceData.BiosSeralNumber
 $DeviceSKU = $deviceData.CsSystemSKUNumber
-
+$OSVersion = $deviceData.OsVersion
+$WinEdition = $deviceData.OsName
 
 ##########################################################
 #### getting missing drivers by Dell Command | Update ####
@@ -304,9 +353,9 @@ if ($null -eq $DriverUpdate)
         #Create the object
         [Array]$DriverArray += $DriverArrayTemp
         
-        }
-    Else
-        {
+    }
+Else
+    {
         
         # for Devices with updates     
 
@@ -323,7 +372,7 @@ if ($null -eq $DriverUpdate)
             {
     
             # Temp Var to get XML Datas from Device Catalog
-            $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $DriverTemp3[$Index]}
+            $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $Update.DriverID}
 
             # preselect xml values for new array
             [array]$TempDriverMissingNameTemp = $TempXMLCatalog.Name.Display | Select-Object -ExpandProperty '#cdata-section'
@@ -364,7 +413,7 @@ if ($null -eq $DriverUpdate)
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value $DriverTemp3[$Index] -Force
+            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value $Update.DriverID -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value $TempDriverMissingName -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value $TempDriverMissingCategory -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value $TempDriverMissingSeverity -Force
@@ -375,50 +424,39 @@ if ($null -eq $DriverUpdate)
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value $TempDriverMissingDellVersion -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value $TempDriverMissingPath -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value $TempDriverMissingDetails -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value $TempDriverMissingComponentID -Force
+            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value $TempDriverMissingComponentID.componentID -Force
     
 
             #Create the object
             [Array]$DriverArray += $DriverArrayTemp
-
-
-                        
+                       
             }
-          }
+    }
 
 # Convert Array to JSON format
-$DeviceInfoJson = $DriverArray | ConvertTo-Json
+$UpdateInfoJson = $DriverArray | ConvertTo-Json
 
-$params = @{
+# Loging Informations to MS Event
+New-MSEventLog -EventID 11 -EntryType Information -Message $UpdateInfoJson
+
+# coding JSON
+$paramsUpdate = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
-    Body       = ([System.Text.Encoding]::UTF8.GetBytes($DeviceInfoJson))
-    LogType    = $LogType 
-}
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($UpdateInfoJson))
+    LogType    = $LogTypeMissing
+    }
 
-$LogResponse = Post-LogAnalyticsData @params
+# Uploading to LogAnalytics
+$LogResponse = Post-LogAnalyticsData @paramsUpdate
 
-#### Getting Installed Informations
-
-# Prepare Device basic datas
-$deviceData = Get-ComputerInfo
-
-# select datas
-$Username = ($deviceData.CsUserName).Split("\")[-1]
-$Vendor = ($deviceData.CsManufacturer).Split(" ")[0]
-$Model = ($deviceData.CsModel)
-$DeviceSerie = ($deviceData.CsModel).Split(" ")[0]
-$ServiceTag = $deviceData.BiosSeralNumber
-$DeviceSKU = $deviceData.CsSystemSKUNumber
-$OSVersion = $deviceData.OsVersion
-$WinEdition = $deviceData.OsName
-
-Start-Process 'C:\Program Files (x86)\Dell\UpdateService\Service\InvColPC.exe' -ArgumentList '-outc=c:\Temp\inventory' -Wait
-[xml]$DriverInventory = Get-Content C:\Temp\inventory
+############################################################
+#### getting installed drivers by Dell Command | Update ####
+############################################################
+$catalogPath = $env:ProgramData+'\Dell\UpdateService\Temp'
+$CatalogFileName = Get-ChildItem $catalogPath | Where-Object Name -Like "*Inventory*xml" | Select-Object -ExpandProperty Name
+[xml]$DriverInventory = Get-Content $catalogPath\$CatalogFileName
 [Array]$DriverIST = $DriverInventory.SVMInventory.Device.application |Select-Object Display, Version, componentType | Sort-Object Display
-Start-Sleep -Seconds 5
-Remove-Item C:\Temp\inventory
-
 
 #Prepare the Table Array for log analytics
 $DriverArray = @()
@@ -448,21 +486,219 @@ foreach ($Driver in $DriverIST)
                         
         }
 
-
-
 # Convert Array to JSON format
-$DeviceInfoJson = $DriverArray | ConvertTo-Json
+$InstalledInfoJson = $DriverArray | ConvertTo-Json
 
-$params = @{
+# Loging Informations to MS Event
+New-MSEventLog -EventID 11 -EntryType Information -Message $InstalledInfoJson
+
+$paramsInstalled = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
-    Body       = ([System.Text.Encoding]::UTF8.GetBytes($DeviceInfoJson))
-    LogType    = $LogType 
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($InstalledInfoJson))
+    LogType    = $LogTypeInstalled 
 }
-$LogResponse = Post-LogAnalyticsData @params
+$LogResponse = Post-LogAnalyticsData @paramsInstalled
 
-#### Getting CIM UpdateEvents
+##################################
+#### Getting CIM UpdateEvents ####
+##################################
+$CIMUpdateEvents = get-DCUCIM -CIMClass UpdateEvents
 
-#### Getting CIM PenetrationRate
+#Prepare the Table Array for log analytics
+$CIMUpdateArray = @()
 
-#### Getting CIM NonComplianceList
+foreach ($UpdateEvent in $CIMUpdateEvents)
+        {
+        
+        # Temp Var to get XML Datas from Device Catalog
+        $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $UpdateEvent.SWBReleaseID}
+
+        # Switch code to value
+        $ComponentTypeValue = switch ($UpdateEvent.componentType) 
+            {
+                1 {"BIOS"}
+                2 {"Driver"}
+                3 {"Firmware"}
+                4 {"Applications"}
+                5 {"Utilities"}
+
+            }
+        
+        $ExecutionReturnCodeValue = switch ($UpdateEvent.ExecutionReturnCode ) 
+            {
+                0 {"SUCCESS"}
+                1 {"ERROR"}
+                2 {"REBOOT_REQUIRED"}
+                3 {"DEP_SOFT_ERROR"}
+                4 {"DEP_HARD_ERROR"}
+                5 {"PLATFORM_UNSUPPORTED"}
+                6 {"REBOOTING_SYSTEM"}
+                7 {"PASSWORD_REQUIRED"}
+                8 {"NO_DOWNGRADE"}
+                9 {"REBOOT_UPDATE_PENDING"}
+                10 {"INVALID_CMDLINE_SPEC"}
+                11 {"UNKNOWN_OPTION"}
+                12 {"AUTHORIZATION_LEVEL"}
+
+            }
+
+            $EventTypeValue = switch ($UpdateEvent.EventType) 
+            {
+                0 {"Update Completed"}
+                1 {"Update Failed"}
+                2 {"BIOS Updated"}
+
+            }
+
+        #generate a new Temp object
+        $CIMUpdateTemp = New-Object PSObject
+
+        # build a temporary array
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $UpdateEvent.componentType -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $ComponentTypeValue -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventType' -Value $UpdateEvent.EventType -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventTypeValue' -Value $EventTypeValue -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCode' -Value $UpdateEvent.ExecutionReturnCode -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCodeValue' -Value $ExecutionReturnCodeValue -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SWBReleaseID' -Value $UpdateEvent.SWBReleaseID -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $TempXMLCatalog.Name.Display.'#cdata-section' -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $TempXMLCatalog.Criticality.Display.'#cdata-section' -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $TempXMLCatalog.vendorVersion -Force
+        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ReleaseDate' -Value $TempXMLCatalog.releaseDate -Force
+
+        
+        
+        #Create the object
+        [Array]$CIMUpdateArray += $CIMUpdateTemp
+                        
+        }
+
+# Convert Array to JSON format
+$EventInfoJson = $CIMUpdateArray | ConvertTo-Json
+
+# Loging Informations to MS Event
+New-MSEventLog -EventID 11 -EntryType Information -Message $EventInfoJson
+
+$paramsEvents = @{
+    CustomerId = $customerId
+    SharedKey  = $sharedKey
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($EventInfoJson))
+    LogType    = $LogTypeEvents
+}
+$LogResponse = Post-LogAnalyticsData $paramsEvents
+
+
+#####################################
+#### Getting CIM PenetrationRate ####
+#####################################
+$CIMPenetrationRate = get-DCUCIM -CIMClass PenetrationRate
+
+#Prepare the Table Array for log analytics
+$CIMUpdateArray = New-Object PSObject
+
+$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force    
+$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'PenetrationRate' -Value $CIMPenetrationRate.UpToDateRate -Force
+
+# Convert Array to JSON format
+$PenetrationRateInfoJson = $CIMUpdateArray | ConvertTo-Json
+
+# Loging Informations to MS Event
+New-MSEventLog -EventID 11 -EntryType Information -Message $PenetrationRateInfoJson
+
+$paramsPenetrationRate = @{
+    CustomerId = $customerId
+    SharedKey  = $sharedKey
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($PenetrationRateInfoJson))
+    LogType    = $LogTypePenetrationRate 
+}
+$LogResponse = Post-LogAnalyticsData $paramsPenetrationRate
+
+
+#######################################
+#### Getting CIM NonComplianceList ####
+#######################################
+$CIMNonComplianceList = get-DCUCIM -CIMClass NonComplianceList
+
+#prepare data
+[array]$NonComplianceList = @()
+[array]$NonComplianceList = $CIMNonComplianceList.NCUpdateList.Split("},{")
+$NonComplianceList = $NonComplianceList | Where-Object { $_ –ne "[" }
+$NonComplianceList = $NonComplianceList | Where-Object { $_ –ne "]" }
+$NonComplianceList = $NonComplianceList | Where-Object { $_ –ne "" }
+
+foreach ($Non in $NonComplianceList)
+    {
+        #generate a new Temp object
+        $NonTempArray = New-Object PSObject
+
+        $NonTemp = $Non.Split("""")
+        $NonTemp = $NonTemp | Where-Object { $_ –ne "" }
+        $NonTemp = $NonTemp | Where-Object { $_ –ne ":" }
+
+        # build a temporary array
+        $NonTempArray | Add-Member -MemberType NoteProperty -Name 'Part' -Value $NonTemp[0] -Force
+        $NonTempArray | Add-Member -MemberType NoteProperty -Name 'Value' -Value $NonTemp[1] -Force
+
+        [Array]$NonComplianceList += $NonTempArray
+    }
+
+
+#Prepare the Table Array for log analytics
+$CIMNonComplianceListArray = @()
+
+foreach ($Compliance in $NonComplianceList)
+    {
+        If ($Compliance.Part -eq "SWB")
+            {
+        # Temp Var to get XML Datas from Device Catalog
+        $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $Compliance.Value}
+
+        #generate a new Temp object
+        $CIMNonComplianceTemp = New-Object PSObject
+
+        # build a temporary array
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $TempXMLCatalog.ComponentType.Display.'#cdata-section'
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SWBReleaseID' -Value $Compliance.Value -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $TempXMLCatalog.Name.Display.'#cdata-section' -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $TempXMLCatalog.Criticality.Display.'#cdata-section' -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $TempXMLCatalog.vendorVersion -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ReleaseDate' -Value $TempXMLCatalog.releaseDate -Force
+
+        
+        
+        #Create the object
+        [Array]$CIMNonComplianceListArray += $CIMNonComplianceTemp
+                        
+        }
+    }
+# Convert Array to JSON format
+$ComplianceInfoJson = $CIMNonComplianceListArray | ConvertTo-Json
+
+# Loging Informations to MS Event
+New-MSEventLog -EventID 11 -EntryType Information -Message $ComplianceInfoJson
+
+$paramsCompliance = @{
+    CustomerId = $customerId
+    SharedKey  = $sharedKey
+    Body       = ([System.Text.Encoding]::UTF8.GetBytes($ComplianceInfoJson))
+    LogType    = $LogTypeNonComplianceList 
+}
+
+$LogResponse = Post-LogAnalyticsData $paramsCompliance
