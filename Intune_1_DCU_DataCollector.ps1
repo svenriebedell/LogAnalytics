@@ -77,51 +77,50 @@ The functions Function Build-Signature and Function Post-LogAnalyticsData was de
 
 # Log analytics functions
 Function Build-Signature ($customerId, $sharedKey, $date, $contentLength, $method, $contentType, $resource)
-{
-    $xHeaders = "x-ms-date:" + $date
-    $stringToHash = $method + "`n" + $contentLength + "`n" + $contentType + "`n" + $xHeaders + "`n" + $resource
-
-    $bytesToHash = [Text.Encoding]::UTF8.GetBytes($stringToHash)
-    $keyBytes = [Convert]::FromBase64String($sharedKey)
-
-    $sha256 = New-Object System.Security.Cryptography.HMACSHA256
-    $sha256.Key = $keyBytes
-    $calculatedHash = $sha256.ComputeHash($bytesToHash)
-    $encodedHash = [Convert]::ToBase64String($calculatedHash)
-    $authorization = 'SharedKey {0}:{1}' -f $customerId,$encodedHash
-    return $authorization
-}
+    {
+        $xHeaders = "x-ms-date:" + $date
+        $stringToHash = $method + "`n" + $contentLength + "`n" + $contentType + "`n" + $xHeaders + "`n" + $resource
+    
+        $bytesToHash = [Text.Encoding]::UTF8.GetBytes($stringToHash)
+        $keyBytes = [Convert]::FromBase64String($sharedKey)
+    
+        $sha256 = New-Object System.Security.Cryptography.HMACSHA256
+        $sha256.Key = $keyBytes
+        $calculatedHash = $sha256.ComputeHash($bytesToHash)
+        $encodedHash = [Convert]::ToBase64String($calculatedHash)
+        $authorization = 'SharedKey {0}:{1}' -f $customerId,$encodedHash
+        return $authorization
+    }
 
 
 # Create the function to create and post the request
 Function Post-LogAnalyticsData($customerId, $sharedKey, $body, $logType)
-{
-    $method = "POST"
-    $contentType = "application/json"
-    $resource = "/api/logs"
-    $rfc1123date = [DateTime]::UtcNow.ToString("r")
-    $contentLength = $body.Length
-    $signature = Build-Signature `
-        -customerId $customerId `
-        -sharedKey $sharedKey `
-        -date $rfc1123date `
-        -contentLength $contentLength `
-        -method $method `
-        -contentType $contentType `
-        -resource $resource
-    $uri = "https://" + $customerId + ".ods.opinsights.azure.com" + $resource + "?api-version=2016-04-01"
-
-    $headers = @{
-        "Authorization" = $signature;
-        "Log-Type" = $logType;
-        "x-ms-date" = $rfc1123date;
-        "time-generated-field" = $TimeStampField;
+    {
+        $method = "POST"
+        $contentType = "application/json"
+        $resource = "/api/logs"
+        $rfc1123date = [DateTime]::UtcNow.ToString("r")
+        $contentLength = $body.Length
+        $signature = Build-Signature `
+            -customerId $customerId `
+            -sharedKey $sharedKey `
+            -date $rfc1123date `
+            -contentLength $contentLength `
+            -method $method `
+            -contentType $contentType `
+            -resource $resource
+        $uri = "https://" + $customerId + ".ods.opinsights.azure.com" + $resource + "?api-version=2016-04-01"
+    
+        $headers = @{
+            "Authorization" = $signature;
+            "Log-Type" = $logType;
+            "x-ms-date" = $rfc1123date;
+            "time-generated-field" = $TimeStampField;
+        }
+    
+        $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $headers -Body $body -UseBasicParsing
+        return $response.StatusCode
     }
-
-    $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $headers -Body $body -UseBasicParsing
-    return $response.StatusCode
-
-}
 
 # Function using DCU to identify missings Updates
 Function Get-MissingDriver
@@ -439,16 +438,16 @@ $UpdateInfoJson = $DriverArray | ConvertTo-Json
 # Loging Informations to MS Event
 New-MSEventLog -EventID 11 -EntryType Information -Message $UpdateInfoJson
 
-# coding JSON
-$paramsUpdate = @{
+$LogType = $LogTypeMissing
+
+#Submit the data to the API endpoint
+$params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
     Body       = ([System.Text.Encoding]::UTF8.GetBytes($UpdateInfoJson))
-    LogType    = $LogTypeMissing
-    }
-
-# Uploading to LogAnalytics
-$LogResponse = Post-LogAnalyticsData @paramsUpdate
+    LogType    = $LogType
+}
+$LogResponse = Post-LogAnalyticsData @params
 
 ############################################################
 #### getting installed drivers by Dell Command | Update ####
@@ -492,13 +491,16 @@ $InstalledInfoJson = $DriverArray | ConvertTo-Json
 # Loging Informations to MS Event
 New-MSEventLog -EventID 11 -EntryType Information -Message $InstalledInfoJson
 
-$paramsInstalled = @{
+$LogType = $LogTypeInstalled
+
+#Submit the data to the API endpoint
+$params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
     Body       = ([System.Text.Encoding]::UTF8.GetBytes($InstalledInfoJson))
-    LogType    = $LogTypeInstalled 
+    LogType    = $LogType
 }
-$LogResponse = Post-LogAnalyticsData @paramsInstalled
+$LogResponse = Post-LogAnalyticsData @params
 
 ##################################
 #### Getting CIM UpdateEvents ####
@@ -587,14 +589,16 @@ $EventInfoJson = $CIMUpdateArray | ConvertTo-Json
 # Loging Informations to MS Event
 New-MSEventLog -EventID 11 -EntryType Information -Message $EventInfoJson
 
-$paramsEvents = @{
+$LogType = $LogTypeEvents
+
+#Submit the data to the API endpoint
+$params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
     Body       = ([System.Text.Encoding]::UTF8.GetBytes($EventInfoJson))
-    LogType    = $LogTypeEvents
+    LogType    = $LogType
 }
-$LogResponse = Post-LogAnalyticsData $paramsEvents
-
+$LogResponse = Post-LogAnalyticsData @params
 
 #####################################
 #### Getting CIM PenetrationRate ####
@@ -617,13 +621,16 @@ $PenetrationRateInfoJson = $CIMUpdateArray | ConvertTo-Json
 # Loging Informations to MS Event
 New-MSEventLog -EventID 11 -EntryType Information -Message $PenetrationRateInfoJson
 
-$paramsPenetrationRate = @{
+$LogType = $LogTypePenetrationRate
+
+#Submit the data to the API endpoint
+$params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
     Body       = ([System.Text.Encoding]::UTF8.GetBytes($PenetrationRateInfoJson))
-    LogType    = $LogTypePenetrationRate 
+    LogType    = $LogType
 }
-$LogResponse = Post-LogAnalyticsData $paramsPenetrationRate
+$LogResponse = Post-LogAnalyticsData @params
 
 
 #######################################
@@ -634,9 +641,9 @@ $CIMNonComplianceList = get-DCUCIM -CIMClass NonComplianceList
 #prepare data
 [array]$NonComplianceList = @()
 [array]$NonComplianceList = $CIMNonComplianceList.NCUpdateList.Split("},{")
-$NonComplianceList = $NonComplianceList | Where-Object { $_ –ne "[" }
-$NonComplianceList = $NonComplianceList | Where-Object { $_ –ne "]" }
-$NonComplianceList = $NonComplianceList | Where-Object { $_ –ne "" }
+$NonComplianceList = $NonComplianceList | Where-Object { $_ -ne "[" }
+$NonComplianceList = $NonComplianceList | Where-Object { $_ -ne "]" }
+$NonComplianceList = $NonComplianceList | Where-Object { $_ -ne "" }
 
 foreach ($Non in $NonComplianceList)
     {
@@ -644,8 +651,8 @@ foreach ($Non in $NonComplianceList)
         $NonTempArray = New-Object PSObject
 
         $NonTemp = $Non.Split("""")
-        $NonTemp = $NonTemp | Where-Object { $_ –ne "" }
-        $NonTemp = $NonTemp | Where-Object { $_ –ne ":" }
+        $NonTemp = $NonTemp | Where-Object { $_ -ne "" }
+        $NonTemp = $NonTemp | Where-Object { $_ -ne ":" }
 
         # build a temporary array
         $NonTempArray | Add-Member -MemberType NoteProperty -Name 'Part' -Value $NonTemp[0] -Force
@@ -694,11 +701,13 @@ $ComplianceInfoJson = $CIMNonComplianceListArray | ConvertTo-Json
 # Loging Informations to MS Event
 New-MSEventLog -EventID 11 -EntryType Information -Message $ComplianceInfoJson
 
-$paramsCompliance = @{
+$LogType = $LogTypeNonComplianceList
+
+#Submit the data to the API endpoint
+$params = @{
     CustomerId = $customerId
     SharedKey  = $sharedKey
     Body       = ([System.Text.Encoding]::UTF8.GetBytes($ComplianceInfoJson))
-    LogType    = $LogTypeNonComplianceList 
+    LogType    = $LogType
 }
-
-$LogResponse = Post-LogAnalyticsData $paramsCompliance
+$LogResponse = Post-LogAnalyticsData @params
