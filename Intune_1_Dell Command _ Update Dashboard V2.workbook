@@ -36,9 +36,6 @@
             "name": "TimeRange",
             "type": 4,
             "isRequired": true,
-            "value": {
-              "durationMs": 86400000
-            },
             "typeSettings": {
               "selectableValues": [
                 {
@@ -76,6 +73,9 @@
             },
             "timeContext": {
               "durationMs": 86400000
+            },
+            "value": {
+              "durationMs": 259200000
             }
           },
           {
@@ -151,17 +151,11 @@
             "quote": "'",
             "delimiter": ",",
             "query": "DellDriverMissing_CL\r\n| distinct DeviceModel_s",
-            "value": [
-              "value::all"
-            ],
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
               ],
               "showDefault": false
-            },
-            "timeContext": {
-              "durationMs": 86400000
             },
             "defaultValue": "value::all",
             "queryType": 0,
@@ -185,10 +179,7 @@
             },
             "defaultValue": "value::all",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": [
-              "value::all"
-            ]
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
@@ -378,7 +369,7 @@
             "type": 4,
             "isRequired": true,
             "value": {
-              "durationMs": 86400000
+              "durationMs": 259200000
             },
             "typeSettings": {
               "selectableValues": [
@@ -543,9 +534,8 @@
         "size": 0,
         "title": "Dell Command | Update Update Events",
         "noDataMessage": "No Update informations found",
-        "timeContext": {
-          "durationMs": 86400000
-        },
+        "timeContextFromParameter": "TimeRange",
+        "showExportToExcel": true,
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
@@ -791,7 +781,7 @@
             "type": 4,
             "isRequired": true,
             "value": {
-              "durationMs": 86400000
+              "durationMs": 259200000
             },
             "typeSettings": {
               "selectableValues": [
@@ -878,7 +868,7 @@
             "name": "SuccessRateLess",
             "type": 1,
             "isRequired": true,
-            "value": "80"
+            "value": "90"
           }
         ],
         "style": "pills",
@@ -894,9 +884,8 @@
         "query": "DellUpdatePenetrationRate_CL\r\n| extend Penetration = replace_string(PenetrationRate_s, ',', '.')\r\n| extend PenNo = todynamic(Penetration)\r\n| where ComputerName_s in ({Computer})\r\n| where DeviceModel_s in ({Model})\r\n| where PenNo < ({SuccessRateLess})\r\n| summarize arg_max(TimeGenerated, *) by SerialNo_s\r\n| order by (SerialNo_s) asc\r\n| project Computer = ComputerName_s, Modell = DeviceModel_s, SuccessRate = PenNo, LastScan =  TimeGenerated\r\n",
         "size": 0,
         "title": "Dell Command | Update Penetration rate defines percentage of successful updates pushed to device",
-        "timeContext": {
-          "durationMs": 86400000
-        },
+        "timeContextFromParameter": "TimeRange",
+        "showExportToExcel": true,
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
@@ -955,7 +944,7 @@
             "type": 4,
             "isRequired": true,
             "value": {
-              "durationMs": 86400000
+              "durationMs": 259200000
             },
             "typeSettings": {
               "selectableValues": [
@@ -1113,16 +1102,163 @@
         "query": "DellUpdateNonComplianceList_CL\r\n| where Severity_s in ({Severity})\r\n| where ComponentType_s in ({DriverType})\r\n| where ComputerName_s in ({Computer})\r\n| where SWBReleaseID_s in ({DriverID})\r\n| where DriverName_s in ({DriverName})\r\n| summarize arg_max(TimeGenerated, *) by ComputerName_s, SWBReleaseID_s\r\n| order by (SerialNo_s) asc\r\n| project Computer = ComputerName_s, DriverID = SWBReleaseID_s,DriverType = ComponentType_s, Name = DriverName_s, Version = DriverVersion_s, Severity = Severity_s, ReleaseDate = ReleaseDate_s, LastScan =  TimeGenerated\r\n",
         "size": 0,
         "title": "Dell Command | Update  Component not-attempted or failed to install",
-        "timeContext": {
-          "durationMs": 86400000
-        },
+        "timeContextFromParameter": "TimeRange",
+        "showExportToExcel": true,
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "DriverType",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "BIOS",
+                    "representation": "greenDark",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Driver",
+                    "representation": "purple",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Firmware",
+                    "representation": "orange",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Applications",
+                    "representation": "turquoise",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Utilities",
+                    "representation": "gray",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "blue",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "Severity",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "NoUpdate",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Recommended",
+                    "representation": "2",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Urgent",
+                    "representation": "4",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Optional",
+                    "representation": "1",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "error",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ]
+        }
       },
       "name": "Driver failed",
       "styleSettings": {
         "showBorder": true
       }
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "e7e1ac4a-67cd-4016-9c7e-c06d4806f563",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 259200000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "Parameter-DCUMissing-1 - Copy - Copy - Copy"
     },
     {
       "type": 3,
@@ -1268,7 +1404,7 @@
             "type": 4,
             "isRequired": true,
             "value": {
-              "durationMs": 2592000000
+              "durationMs": 259200000
             },
             "typeSettings": {
               "selectableValues": [
@@ -1321,20 +1457,13 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "DellDriverMissing_CL\r\n| distinct DriverMissingSeverity_s\r\n| where DriverMissingSeverity_s != (\"NoUpdate\")",
-            "value": [
-              "value::all"
-            ],
+            "query": "DellDriverMissing_CL\r\n| distinct DriverMissingSeverity_s\r\n| where isnotempty (DriverMissingSeverity_s) \r\n| where DriverMissingSeverity_s != (\"NoUpdate\")",
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
               ],
               "showDefault": false
             },
-            "timeContext": {
-              "durationMs": 0
-            },
-            "timeContextFromParameter": "TimeRange",
             "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
@@ -1533,112 +1662,12 @@
         "version": "KqlParameterItem/1.0",
         "parameters": [
           {
-            "id": "ff1700f3-2220-4673-a437-6df3425972b4",
-            "version": "KqlParameterItem/1.0",
-            "name": "DriverName",
-            "type": 2,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "DellDriverInstalled_CL\r\n| distinct DriverName_s\r\n| sort by DriverName_s asc",
-            "value": [
-              "value::all"
-            ],
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "showDefault": false
-            },
-            "timeContext": {
-              "durationMs": 86400000
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
-          },
-          {
-            "id": "7e743540-1848-4e13-b2fd-65272e9bd899",
-            "version": "KqlParameterItem/1.0",
-            "name": "DriverVersion",
-            "type": 2,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "DellDriverInstalled_CL\r\n| where DriverName_s in ({DriverName})\r\n| distinct DriverVersion_s\r\n| sort by DriverVersion_s\r\n",
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "showDefault": false
-            },
-            "timeContext": {
-              "durationMs": 86400000
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": [
-              "value::all"
-            ]
-          },
-          {
-            "id": "cc29c6c4-427e-45ba-8d28-10e404991e3f",
-            "version": "KqlParameterItem/1.0",
-            "name": "DriverCategory",
-            "type": 2,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "DellDriverInstalled_CL\r\n| distinct DriverCategory_s",
-            "value": [
-              "value::all"
-            ],
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "showDefault": false
-            },
-            "timeContext": {
-              "durationMs": 86400000
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
-          },
-          {
-            "id": "88c0a8b4-5ad0-4c29-8e86-deda3d43f9ba",
-            "version": "KqlParameterItem/1.0",
-            "name": "ComputerName",
-            "type": 2,
-            "multiSelect": true,
-            "quote": "'",
-            "delimiter": ",",
-            "query": "DellDriverInstalled_CL\r\n| distinct ComputerName_s",
-            "value": [
-              "value::all"
-            ],
-            "typeSettings": {
-              "additionalResourceOptions": [
-                "value::all"
-              ],
-              "showDefault": false
-            },
-            "timeContext": {
-              "durationMs": 86400000
-            },
-            "defaultValue": "value::all",
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
-          },
-          {
             "id": "bd5795f1-95a6-4e92-91ac-eaf3bbb728e5",
             "version": "KqlParameterItem/1.0",
             "name": "TimeRange",
             "type": 4,
             "value": {
-              "durationMs": 86400000
+              "durationMs": 259200000
             },
             "typeSettings": {
               "selectableValues": [
@@ -1671,6 +1700,88 @@
             "timeContext": {
               "durationMs": 86400000
             }
+          },
+          {
+            "id": "ff1700f3-2220-4673-a437-6df3425972b4",
+            "version": "KqlParameterItem/1.0",
+            "name": "DriverName",
+            "type": 2,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellDriverInstalled_CL\r\n| distinct DriverName_s\r\n| sort by DriverName_s asc",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "7e743540-1848-4e13-b2fd-65272e9bd899",
+            "version": "KqlParameterItem/1.0",
+            "name": "DriverVersion",
+            "type": 2,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellDriverInstalled_CL\r\n| where DriverName_s in ({DriverName})\r\n| distinct DriverVersion_s\r\n| sort by DriverVersion_s\r\n",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "cc29c6c4-427e-45ba-8d28-10e404991e3f",
+            "version": "KqlParameterItem/1.0",
+            "name": "DriverCategory",
+            "type": 2,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellDriverInstalled_CL\r\n| distinct DriverCategory_s",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "id": "88c0a8b4-5ad0-4c29-8e86-deda3d43f9ba",
+            "version": "KqlParameterItem/1.0",
+            "name": "ComputerName",
+            "type": 2,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "DellDriverInstalled_CL\r\n| distinct ComputerName_s",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
@@ -1686,9 +1797,7 @@
         "query": "DellDriverInstalled_CL\r\n| where DriverName_s in ({DriverName})\r\n    | where DriverVersion_s in ({DriverVersion})\r\n    | where DriverCategory_s in ({DriverCategory})\r\n    | where ComputerName_s in ({ComputerName})\r\n| distinct ComputerName_s, DriverName_s, DriverVersion_s\r\n| summarize count () by DriverName_s, DriverVersion_s\r\n| sort by DriverName_s asc, DriverVersion_s desc\r\n",
         "size": 0,
         "title": "Installed Drivers",
-        "timeContext": {
-          "durationMs": 86400000
-        },
+        "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
@@ -1761,15 +1870,11 @@
             "query": "DellDriverMissing_CL\r\n| distinct ComputerName_s",
             "typeSettings": {
               "additionalResourceOptions": [
-                "value::1",
                 "value::all"
               ],
               "showDefault": false
             },
-            "timeContext": {
-              "durationMs": 86400000
-            },
-            "defaultValue": "value::1",
+            "defaultValue": "value::all",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
           }
@@ -1833,16 +1938,13 @@
             "type": 2,
             "isRequired": true,
             "query": "DellDriverInstalled_CL\r\n| distinct DriverName_s",
-            "value": "Dell Command | Update for Windows Universal",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
             },
-            "timeContext": {
-              "durationMs": 86400000
-            },
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": "Dell Optimizer"
           }
         ],
         "style": "pills",
