@@ -1200,20 +1200,6 @@ Else
 
         foreach ($Update in $DriverUpdate)
             {
-
-            # select first values in case of some Driver ID´s have more than one input in the catalog.
-            $TempDriverMissingName = $TempDriverMissingNameTemp | Select-Object -First 1
-            $TempDriverMissingCategory = $TempDriverMissingCategoryTemp | Select-Object -First 1
-            $TempDriverMissingSeverity = $TempDriverMissingSeverityTemp | Select-Object -First 1
-            $TempDriverMissingType = $TempDriverMissingTypeTemp | Select-Object -First 1
-            $TempDriverMissingDescription = $TempDriverMissingDescriptionTemp | Select-Object -First 1
-            $TempDriverMissingReleaseDate = $TempDriverMissingReleaseDateTemp | Select-Object -First 1
-            $TempDriverMissingVendorVersion = $TempDriverMissingVendorVersionTemp | Select-Object -First 1
-            $TempDriverMissingDellVersion = $TempDriverMissingDellVersionTemp | Select-Object -First 1
-            $TempDriverMissingPath = $TempDriverMissingPathTemp | Select-Object -First 1
-            $TempDriverMissingDetails = $TempDriverMissingDetailsTemp | Select-Object -First 1
-            $TempDriverMissingComponentID = $TempDriverMissingComponentIDTemp | Select-Object -First 1
-      
     
             #generate a new Temp object
             $DriverArrayTemp = New-Object PSObject
@@ -1235,7 +1221,7 @@ Else
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDescription' -Value $Update.DriverDescription -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingReleaseDate' -Value $Update.DriverReleaseDate -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingVendorVersion' -Value $Update.DriverDellVersion -Force
-           # $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value $Update.DriverDellVersion -Force
+            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value $Update.CatalogVersion -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value $Update.DownloadUrl -Force
            # $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value $Update.DriverID -Force
             $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value $Update.ComponentIdMatchingInventory -Force
@@ -1370,7 +1356,7 @@ $LogResponse = Post-LogAnalyticsData @params
 ##################################
 #### Getting CIM UpdateEvents ####
 ##################################
-$CIMUpdateEvents = get-DCUCIM -CIMClass UpdateEvents
+$CIMUpdateEvents = $updat
 
 #Prepare the Table Array for log analytics
 $CIMUpdateArray = @()
