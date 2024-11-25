@@ -56,16 +56,9 @@ $LogTypeNonComplianceList = "DellUpdateNonComplianceList"   # if you are using t
 $TimeStampField = ""
 #***********************************************************************************************************
 
-# Temp folder used for some processes all files will be deleted later
-$Temp_Folder = "C:\Temp\"
-
 ## Do not change ##
-$DCUProgramName = ".\dcu-cli.exe"
-$DCUPath = (Get-CimInstance -ClassName Win32_Product -Filter "Name like '%Dell%Command%Update%'").InstallLocation
-$CIMNamespace = "root/Dell/PlatformUpdateEvents"
 $MSEventLogName = "Dell"
-$MSEventSource = "DCU LogAnalytics"
-
+$MSEventSource = "DSA LogAnalytics"
 
 ################################################################
 ###  Functions Section                                       ###
@@ -121,46 +114,7 @@ Function Post-LogAnalyticsData($customerId, $sharedKey, $body, $logType)
         return $response.StatusCode
     }
 
-# Function using DCU to identify missings Updates
-Function Get-MissingDriver
-    {
-
-        Set-Location -Path $DCUPath
-        # DCU scan only generate a XML report with missing drivers
-        Start-Process -FilePath $DCUProgramName -ArgumentList "/scan -report=$Temp_Folder" -Wait -WindowStyle Hidden
-
-        # Get Catalog file name of Scan Report
-        $ReportFileName = Get-ChildItem $Temp_Folder | Where-Object Name -Like "DCUApp*Update*xml" | Select-Object -ExpandProperty Name
-
-        # read XML File in a variable
-        [XML]$MissingDriver = Get-Content $Temp_Folder$ReportFileName
-
-        $DriverArrayXML = $MissingDriver.updates.update
-
-        foreach ($Driver in $DriverArrayXML) 
-            {
-                        
-            # build a temporary array
-            $DriverArrayTemp = New-Object -TypeName psobject
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverID' -Value $Driver.Release
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'Name' -Value $Driver.name
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $Driver.urgency
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'Category' -Value $Driver.Category
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ReleaseDate' -Value $Driver.Date
-            
-            $DriverArrayTemp
-
-            }
-       
-        #Delete temporary report file of dcu from temp folder
-        Remove-Item -Path $Temp_Folder$ReportFileName -Force
-
-        # Set folder to root
-        Set-Location \
-
-    }
-
-# Function checking if DCU is installed on a device
+# Function checking if DSA is installed on a device
 function CheckForAppInstall
     {
 
@@ -203,7 +157,7 @@ function CheckForAppInstall
 
           # Get a list of all installed applications from the registry
           $uninstallKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
-          $regKeys = Get-ChildItem $uninstallKey | foreach { Get-ItemProperty $_.PsPath }
+          $regKeys = Get-ChildItem $uninstallKey | ForEach-Object { Get-ItemProperty $_.PsPath }
 
 
           Write-output "Looking for $AppName in Inventory"
@@ -267,15 +221,6 @@ function New-MSEventLog
 
     }
 
-function get-DCUCIM 
-    {
-        param (
-            [Parameter(Mandatory = $true)][ValidateSet("UpdateEvents", "NonComplianceList", "PenetrationRate")][string]$CIMClass
-        )
-        
-        Get-CimInstance -Namespace $CIMNamespace -ClassName $CIMClass
-    }
-
 function get-SATDUpdateStatus
     {
         
@@ -293,6 +238,7 @@ function get-SATDUpdateStatus
             1.0.3   split the MissingDriver option to last and all scannes
             1.0.4   updated function Install_PSModule Version 1.0.1
             1.0.5   sending return false if the device has no SA scans in the last 7 days
+            1.0.6   adding support of installed driver
 
         Requirements:
             - Install of the PSSQLite Module form the PowerShell Gallery should be allowed
@@ -319,7 +265,7 @@ function get-SATDUpdateStatus
                
         param 
             (
-                [Parameter(mandatory=$true)][ValidateSet('UpdateCounter','MissingDriverLastScan','MissingDriverAllScan')][String]$Modus
+                [Parameter(mandatory=$true)][ValidateSet('UpdateCounter','MissingDriverLastScan','MissingDriverAllScan','InstalledAll')][String]$Modus
             )
 
         #########################################################################################################
@@ -344,8 +290,9 @@ function get-SATDUpdateStatus
         
         
                 Changelog:
-                    1.0.0 Initial Version
-                    1.0.1 correct install check and add update function
+                    1.0.0   Initial Version
+                    1.0.1   correct install check and add update function
+                    1.0.2   fix issue some PS-Module have problems if they are still imported and if will try again to import the same module.
         
         
                 .Example
@@ -403,21 +350,36 @@ function get-SATDUpdateStatus
                                 try 
                                     {
                                         $ModulStatus = Get-InstalledModule -Name $ModuleName -ErrorAction Stop
-                                        Write-Host "Module" $ModuleName "exist" -ForegroundColor Green
-                                        Write-Host "Module" $ModuleName "will import now to powershell"
                                         
-                                        try 
+                                        If($null -ne $ModulStatus)
                                             {
-                                                Import-Module $ModuleName -Verbose -Force -ErrorAction Stop
-                                                Write-Host "Import Module" $ModuleName "is successfull" -ForegroundColor Green
-                                                Return $true
-                                            }
-                                        catch 
-                                            {
-                                                Write-Host "Import Module" $ModuleName "is fail" -ForegroundColor Red
-                                                Return $false
-                                            }
-                                        
+                                                Write-Host "Module" $ModuleName "exist" -ForegroundColor Green
+                                                Write-Host "Checking if imported"
+                                                
+                                                $CheckImport = Get-Module -Name $ModuleName
+        
+                                                If($null -eq $CheckImport)
+                                                    {
+                                                        Write-Host "Module" $ModuleName "is not imported"
+        
+                                                        try 
+                                                            {
+                                                                Import-Module $ModuleName -Verbose -Force -ErrorAction Stop
+                                                                Write-Host "Import Module" $ModuleName "is successfull" -ForegroundColor Green
+                                                                Return $true
+                                                            }
+                                                        catch 
+                                                            {
+                                                                Write-Host "Import Module" $ModuleName "is fail" -ForegroundColor Red
+                                                                Return $false
+                                                            }
+                                                    }
+                                                else 
+                                                    {
+                                                        Write-Host "Module" $ModuleName "is still imported" -ForegroundColor Green
+                                                        Return $true
+                                                    }
+                                            }                             
                                     }
                                 catch 
                                     {
@@ -464,22 +426,33 @@ function get-SATDUpdateStatus
                                                     }
         
                                             }
-        
                                         else 
-                                            {
+                                            {                                      
                                                 Write-Host "Module" $ModuleName "exist" -ForegroundColor Green
-                                                Write-Host "Module" $ModuleName "will import now to powershell"
-                                                
-                                                try 
+                                                Write-Host "Checking if imported"
+                                                        
+                                                $CheckImport = Get-Module -Name $ModuleName
+                
+                                                If($null -eq $CheckImport)
                                                     {
-                                                        Import-Module $ModuleName -Verbose -Force -ErrorAction Stop
-                                                        Write-Host "Import Module" $ModuleName "is successfull" -ForegroundColor Green
-                                                        Return $true
+                                                        Write-Host "Module" $ModuleName "is not imported"
+                
+                                                        try 
+                                                            {
+                                                                Import-Module $ModuleName -Verbose -Force -ErrorAction Stop
+                                                                Write-Host "Import Module" $ModuleName "is successfull" -ForegroundColor Green
+                                                                Return $true
+                                                            }
+                                                        catch 
+                                                            {
+                                                                Write-Host "Import Module" $ModuleName "is fail" -ForegroundColor Red
+                                                                Return $false
+                                                            }
                                                     }
-                                                catch 
+                                                else 
                                                     {
-                                                        Write-Host "Import Module" $ModuleName "is fail" -ForegroundColor Red
-                                                        Return $false
+                                                        Write-Host "Module" $ModuleName "is still imported" -ForegroundColor Green
+                                                        Return $true
                                                     }
                                             }
                                     }
@@ -518,6 +491,7 @@ function get-SATDUpdateStatus
         $Query = "SELECT * FROM DriverScan"
         $QueryUpdate = "SELECT * FROM DriverInstall"
         $QueryUpdateList = "SELECT * FROM DriverScanDetails"
+        $QueryInstall = "SELECT * FROM InventoryDetails"
         $today = Get-Date
 
         #########################################################################################################
@@ -1042,6 +1016,103 @@ function get-SATDUpdateStatus
                                 Return False
                             }
                     }
+                if ($Modus -eq "InstalledAll") 
+                    {
+                        # check if data source existing and get latest datas
+                         try 
+                            {
+                                $CheckDataSource = Test-Path -Path $DataSource -ErrorAction Stop
+                            }
+                        catch 
+                            {
+                                Write-Host "No Database exist" -ForegroundColor Red
+                            }
+                        If ($CheckDataSource -eq $true)
+                            {
+                                # checking getting Tables Scan / Install / Details
+                                            
+                                ## DriverInstalled
+                                try 
+                                    {
+                                        [array]$TableDriverInventory = Invoke-SqliteQuery -DataSource $DataSource -Query $QueryInstall -ErrorAction Stop
+                                    }
+                                catch 
+                                    {
+                                        Write-Host "No access to Table InventoryDetails"
+                                        Return $false
+                                    }
+                                                    
+                                If ($null -ne $TableDriverInventory)
+                                    {
+                                        $InventoryArray = @()
+
+                                        foreach ($Inventory in $TableDriverInventory)
+                                            {
+                                                #temporay Array
+                                                $TempInventory = New-Object -TypeName psobject
+
+                                                # convert Time form Unix to UTC and local time
+                                                $BaseTime = $Inventory.ModifiedTime
+                                                $DateTime = [System.DateTimeOffset]::FromUnixTimeSeconds($BaseTime)
+
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'RecordID' -Value $Inventory.RecordID
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverDellVersion' -Value $Inventory.DriverDellVersion
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverID' -Value $Inventory.DriverID
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverTitle' -Value $Inventory.DriverTitle
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverReleaseDate' -Value $Inventory.DriverReleaseDate
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverDescription' -Value $Inventory.DriverDescription
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverCategoryName' -Value $Inventory.DriverCategoryName                                
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverType' -Value $Inventory.DriverType
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverTypeName' -Value $Inventory.DriverTypeName
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'RebootRequired' -Value $Inventory.RebootRequired
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'CatalogVersion' -Value $Inventory.CatalogVersion
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverImportanceLevel' -Value $Inventory.DriverImportanceLevel
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverUniqeID' -Value $Inventory.DriverUniqeID
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverSize' -Value $Inventory.DriverSize
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'FileName' -Value $Inventory.FileName
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DownloadUrl' -Value $Inventory.DownloadUrl
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'ImportantUrl' -Value $Inventory.ImportantUrl
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'HashAlgorithm' -Value $Inventory.HashAlgorithm
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'HashValue' -Value $Inventory.HashValue
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'SortOrder' -Value $Inventory.SortOrder
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'IsInventoryComponent' -Value $Inventory.IsInventoryComponent                                
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'ComponentIdMatchingInventory' -Value $Inventory.ComponentIdMatchingInventory
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'Dependencies' -Value $Inventory.Dependencies
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'InventoryVersion' -Value $Inventory.InventoryVersion
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'IsDependency' -Value $Inventory.IsDependency
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'HasDependency' -Value $Inventory.HasDependency
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'IsDockUpdate' -Value $Inventory.IsDockUpdate
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'IsIsvLocked' -Value $Inventory.IsIsvLocked
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'pluginId' -Value $Inventory.pluginId
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'SharedModules' -Value $Inventory.SharedModules
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'IsBSodCausing' -Value $Inventory.IsBSodCausing
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'IsPowerAdapterRequired' -Value $Inventory.IsPowerAdapterRequired
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DeviceDescription' -Value $Inventory.DeviceDescription
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'BsodRate' -Value $Inventory.BsodRate
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'BsodVersion' -Value $Inventory.BsodVersion                                
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'DriverScanID' -Value $Inventory.DriverScan_id
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'UTCTime' -Value $DateTime.UtcDateTime
+                                                $TempInventory | Add-Member -MemberType NoteProperty -Name 'LocalTime' -Value $DateTime.LocalDateTime
+
+                                                $InventoryArray += $TempInventory
+                                            }
+      
+                                        return $InventoryArray
+                                                
+                                    }
+                                else 
+                                    {
+                                        Write-Host "No scan data"
+                                        return $false
+                                    }
+
+                            }
+                        else 
+                            {
+                                Write-Host "No Database exist" -ForegroundColor Red
+                                Return False
+                            }
+                    }
             }
         else 
             {
@@ -1049,6 +1120,7 @@ function get-SATDUpdateStatus
                 return "NoPSSQLite"
             }
     }
+
 ################################################################
 ###  Program Section                                         ###
 ################################################################
@@ -1056,12 +1128,12 @@ function get-SATDUpdateStatus
 ##########################################################
 #### Check if Dell SupportAssist for Business is installed on device
 
-If (CheckForAppInstall -AppName "Dell SupportAssist for Business*" -eq $true)
+If ((CheckForAppInstall -AppName "Dell SupportAssist for Business*") -eq $true)
     {
         $EventMessage = [PSCustomObject]@{
             Process = "Check installation Dell SupportAssist for Business"
             Installed = $true
-            Status = "Starting collect informations from Dell SupportAssist for Business"
+            Success = "Starting collect informations from Dell SupportAssist for Business"
        } | ConvertTo-Json
 
        new-MSEventLog -EventId 11 -EntryType Information  -Message $EventMessage
@@ -1072,7 +1144,7 @@ else
         $EventMessage = [PSCustomObject]@{
             Status = "Starting collect informations from Dell SupportAssist for Business"
             Installed = $false
-            Status = "Stop script by Exit 1"
+            Success = "Stop script by Exit 1"
        } | ConvertTo-Json
 
        new-MSEventLog -EventId 12 -EntryType Error  -Message $EventMessage
@@ -1141,7 +1213,7 @@ $Username = ($deviceData.CsUserName).Split("\")[-1]
 $Vendor = ($deviceData.CsManufacturer).Split(" ")[0]
 $Model = ($deviceData.CsModel)
 $DeviceSerie = ($deviceData.CsModel).Split(" ")[0]
-$ServiceTag = $deviceData.BiosSeralNumber
+$ServiceTag = $deviceData.BiosSerialNumber
 $DeviceSKU = $deviceData.CsSystemSKUNumber
 $OSVersion = $deviceData.OsVersion
 $WinEdition = $deviceData.OsName
@@ -1153,12 +1225,12 @@ $WinEdition = $deviceData.OsName
 ##############################################################
 #### checking if updates availible by Dell SupportAssist  ####
 $DriverUpdate = get-SATDUpdateStatus -Modus MissingDriverAllScan
+$LastUpdateID = $DriverUpdate | Sort-Object ID | Select-Object -ExpandProperty ID -Last 1
 
 #############################################
 #### Checking if $DriverUpdate includes datas
 if ($null -eq $DriverUpdate)
-    {
-        
+    {      
         # for Devices without updates write data with resulte no updates
 
         #generate a new Temp object
@@ -1185,14 +1257,11 @@ if ($null -eq $DriverUpdate)
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value "" -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value "" -Force
     
-
         #Create the object
-        [Array]$DriverArray += $DriverArrayTemp
-        
+        [Array]$DriverArray += $DriverArrayTemp  
     }
 Else
-    {
-        
+    {  
         # for Devices with updates     
 
         #Prepare the Table Array for log analytics
@@ -1203,120 +1272,67 @@ Else
     
             #generate a new Temp object
             $DriverArrayTemp = New-Object PSObject
-        
 
-            # build a temporary array
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value $Update.DriverID -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value $Update.DriverTitle -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value $Update.DriverCategory -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value $Update.DriverImportanceLevel -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingType' -Value $Update.DriverType -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDescription' -Value $Update.DriverDescription -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingReleaseDate' -Value $Update.DriverReleaseDate -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingVendorVersion' -Value $Update.DriverDellVersion -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value $Update.CatalogVersion -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value $Update.DownloadUrl -Force
-           # $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value $Update.DriverID -Force
-            $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value $Update.ComponentIdMatchingInventory -Force
-    
-<#
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'ID' -Value $Scan.ID
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'ScanType' -Value $Scan.ScanType
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'AvailableDriversForUpdate' -Value $Scan.AvailableDriversForUpdate
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'Status' -Value $Scan.Status
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'LaunchContext' -Value $Scan.LaunchContext
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'ModifiedTimeScan' -Value $Scan.ModifiedTime
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'SessionId' -Value $Scan.SessionId
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'UTCTime' -Value $Scan.UTCTime
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'LocalTime' -Value $Scan.LocalTime
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverDellVersion' -Value $Scaned.DriverDellVersion
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverId' -Value $Scaned.DriverId
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverTitle' -Value $Scaned.DriverTitle
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverReleaseDate' -Value $Scaned.DriverReleaseDate
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverDescription' -Value $Scaned.DriverDescription
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value $Scaned.DriverCategory
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverType' -Value $Scaned.DriverType
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'RecordID' -Value $Scaned.RecordID
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverTypeName' -Value $Scaned.DriverTypeName
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'RebootRequired' -Value $Scaned.RebootRequired
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'CatalogVersion' -Value $Scaned.CatalogVersion
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverImportanceLevel' -Value $Scaned.DriverImportanceLevel
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverUniqeID' -Value $Scaned.DriverUniqeID
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverSize' -Value $Scaned.DriverSize
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'FileName' -Value $Scaned.FileName
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DownloadUrl' -Value $Scaned.DownloadUrl
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'ModifiedTime' -Value $Scaned.ModifiedTime
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'ImportantUrl' -Value $Scaned.ImportantUrl
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'HashAlgorithm' -Value $Scaned.HashAlgorithm
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'HashValue' -Value $Scaned.HashValue
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'SortOrder' -Value $Scaned.SortOrder
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'IsInventoryComponent' -Value $Scaned.IsInventoryComponent
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'ComponentIdMatchingInventory' -Value $Scaned.ComponentIdMatchingInventory
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'InventoryVersion' -Value $Scaned.InventoryVersion
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'IsIsvLocked' -Value $Scaned.IsIsvLocked
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'IsDependency' -Value $Scaned.IsDependency
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'HasDependency' -Value $Scaned.HasDependency
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'IsDockUpdate' -Value $Scaned.IsDockUpdate
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'PluginId' -Value $Scaned.PluginId
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'IsBSodCausing' -Value $Scaned.IsBSodCausing
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'IsPowerAdapterRequired' -Value $Scaned.IsPowerAdapterRequired
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DeviceDescription' -Value $Scaned.DeviceDescription
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'BsodRate' -Value $Scaned.BsodRate
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'BsodVersion' -Value $Scaned.BsodVersion
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'IsBiosPasswordSet' -Value $Scaned.IsBiosPasswordSet
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'ReclassifiedDriverImportance' -Value $Scaned.ReclassifiedDriverImportance
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'BiosCodeStatus' -Value $Scaned.BiosCodeStatus
-            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverScan_id' -Value $Scaned.DriverScan_id
+            if($LastUpdateID -eq $Update.ID)
+                {
+                    If($update.InstallationStatus -ne "Installed")
+                        {            
+                                # build a temporary array
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value $Update.DriverID -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value $Update.DriverTitle -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value $Update.DriverCategoryName -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value $Update.DriverImportanceLevel -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingType' -Value $Update.DriverTypeName -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDescription' -Value $Update.DriverDescription -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingReleaseDate' -Value $Update.DriverReleaseDate -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingVendorVersion' -Value $Update.DriverDellVersion -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value $Update.CatalogVersion -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value $Update.DownloadUrl -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value $Update.DriverID -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value $Update.ComponentIdMatchingInventory -Force
 
-#>
-
-            #Create the object
-            [Array]$DriverArray += $DriverArrayTemp
-                       
+                                #Create the object
+                                [Array]$DriverArray += $DriverArrayTemp
+                        }
+                }
+                
             }
     }
+   
+# cover cases if varible is empty for API Upload   
+If ($null -ne $DriverArray)
+    {
+        # Convert Array to JSON format
+        $UpdateInfoJson = $DriverArray | ConvertTo-Json
 
-# Convert Array to JSON format
-$UpdateInfoJson = $DriverArray | ConvertTo-Json
+        # Loging Informations to MS Event
+        New-MSEventLog -EventID 11 -EntryType Information -Message $UpdateInfoJson
 
-# Loging Informations to MS Event
-New-MSEventLog -EventID 11 -EntryType Information -Message $UpdateInfoJson
+        $LogType = $LogTypeMissing
 
-$LogType = $LogTypeMissing
+        #Submit the data to the API endpoint
+        $params = @{
+            CustomerId = $customerId
+            SharedKey  = $sharedKey
+            Body       = ([System.Text.Encoding]::UTF8.GetBytes($UpdateInfoJson))
+            LogType    = $LogType
+        }
+        $LogResponse = Post-LogAnalyticsData @params
+    }
+else 
+    {
+        # for Devices without required updates
 
-#Submit the data to the API endpoint
-$params = @{
-    CustomerId = $customerId
-    SharedKey  = $sharedKey
-    Body       = ([System.Text.Encoding]::UTF8.GetBytes($UpdateInfoJson))
-    LogType    = $LogType
-}
-$LogResponse = Post-LogAnalyticsData @params
-
-############################################################
-#### getting installed drivers by Dell Command | Update ####
-############################################################
-$catalogPath = $env:ProgramData+'\Dell\UpdateService\Temp'
-$CatalogFileName = Get-ChildItem $catalogPath | Where-Object Name -Like "*Inventory*xml" | Select-Object -ExpandProperty Name
-[xml]$DriverInventory = Get-Content $catalogPath\$CatalogFileName
-[Array]$DriverIST = $DriverInventory.SVMInventory.Device.application |Select-Object Display, Version, componentType | Sort-Object Display
-
-#Prepare the Table Array for log analytics
-$DriverArray = @()
-
-foreach ($Driver in $DriverIST)
-        {
-        
         #generate a new Temp object
         $DriverArrayTemp = New-Object PSObject
-
+        
         # build a temporary array
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
@@ -1324,20 +1340,88 @@ foreach ($Driver in $DriverIST)
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSEdition' -Value $WinEdition -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSVersion' -Value $OSVersion -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $Driver.display -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $Driver.version -Force
-        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value $Driver.componentType -Force
-
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value "NOUPD" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value "no updates" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingCategory' -Value "no updates" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingSeverity' -Value "NoUpdate" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingType' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDescription' -Value "This device has no updates" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingReleaseDate' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingVendorVersion' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDellVersion' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingPath' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingDetails' -Value "" -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingComponentID' -Value "" -Force
+    
         #Create the object
         [Array]$DriverArray += $DriverArrayTemp
-                        
+
+                # Convert Array to JSON format
+                $UpdateInfoJson = $DriverArray | ConvertTo-Json
+
+                # Loging Informations to MS Event
+                New-MSEventLog -EventID 11 -EntryType Information -Message $UpdateInfoJson
+        
+                $LogType = $LogTypeMissing
+        
+                #Submit the data to the API endpoint
+                $params = @{
+                    CustomerId = $customerId
+                    SharedKey  = $sharedKey
+                    Body       = ([System.Text.Encoding]::UTF8.GetBytes($UpdateInfoJson))
+                    LogType    = $LogType
+                }
+        $LogResponse = Post-LogAnalyticsData @params
+    }
+
+
+############################################################
+#### getting installed drivers by Dell Command | Update ####
+############################################################
+
+#run Inventory Collector
+& 'C:\Program Files (x86)\Dell\UpdateService\Service\InvColPC.exe' -outc=c:\temp\inventory.xml
+
+# get datas from inventory scan
+try 
+    {
+        [xml]$DriverInventory = Get-Content c:\temp\inventory.xml -ErrorAction Stop
+        Remove-Item -Path c:\temp\inventory.xml -Recurse
+    }
+catch 
+    {
+        Write-Host "No Inventory file found"
+    }
+
+#Prepare the Table Array for log analytics
+$InstalledArray  = @()
+
+foreach ($Driver in $DriverInventory.SVMInventory.Device)
+        {     
+            #generate a new Temp object
+            $InstalledArrayTemp  = New-Object PSObject
+
+            # build a temporary array
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSEdition' -Value $WinEdition -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSVersion' -Value $OSVersion -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $Driver.display  -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $Driver.application.version -Force
+            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value $Driver.application.componentType -Force
+
+            #Create the object
+            [Array]$InstalledArray  += $InstalledArrayTemp                     
         }
 
 # Convert Array to JSON format
-$InstalledInfoJson = $DriverArray | ConvertTo-Json
+$InstalledInfoJson = $InstalledArray | ConvertTo-Json
 
 # Loging Informations to MS Event
 New-MSEventLog -EventID 11 -EntryType Information -Message $InstalledInfoJson
@@ -1353,85 +1437,67 @@ $params = @{
 }
 $LogResponse = Post-LogAnalyticsData @params
 
+
 ##################################
 #### Getting CIM UpdateEvents ####
 ##################################
-$CIMUpdateEvents = $updat
+$CIMUpdateEvents = $DriverUpdate
 
 #Prepare the Table Array for log analytics
 $CIMUpdateArray = @()
 
 foreach ($UpdateEvent in $CIMUpdateEvents)
         {
+            If($UpdateEvent.InstallationStatus -eq "Installed")
+                {
+                    #generate a new Temp object
+                    $CIMUpdateTemp = New-Object PSObject
+
+                    # build a temporary array
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $UpdateEvent.DriverTypeName -Force
+
+                    #adjusting output depends on Restart is required or not
+                    If($UpdateEvent.InstallationReturnCode -eq "RequiresReboot")
+                        {
+                            If($UpdateEvent.DriverType -eq "BIOS")
+                                {
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventType' -Value $UpdateEvent.InstallationStatus -Force
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventTypeValue' -Value "BIOS Updated" -Force
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCode' -Value $UpdateEvent.InstallationStatus -Force
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCodeValue' -Value "REBOOT_REQUIRED" -Force
+                                }
+                            else 
+                                {
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventType' -Value $UpdateEvent.InstallationStatus -Force
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventTypeValue' -Value "Update Completed" -Force
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCode' -Value $UpdateEvent.InstallationStatus -Force
+                                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCodeValue' -Value "REBOOT_REQUIRED" -Force
+                                }
+                        }
+                    else 
+                        {
+                            $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventType' -Value $UpdateEvent.InstallationStatus -Force
+                            $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventTypeValue' -Value "Update Completed" -Force
+                            $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCode' -Value $UpdateEvent.InstallationStatus -Force
+                            $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCodeValue' -Value "SUCCESS" -Force
+                        }
+
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SWBReleaseID' -Value $UpdateEvent.DriverId -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $UpdateEvent.DriverTitle -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $UpdateEvent.ReclassifiedDriverImportance -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $UpdateEvent.CatalogVersion -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ReleaseDate' -Value $UpdateEvent.DriverReleaseDate -Force
         
-        # Temp Var to get XML Datas from Device Catalog
-        $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $UpdateEvent.SWBReleaseID}
-
-        # Switch code to value
-        $ComponentTypeValue = switch ($UpdateEvent.componentType) 
-            {
-                1 {"BIOS"}
-                2 {"Driver"}
-                3 {"Firmware"}
-                4 {"Applications"}
-                5 {"Utilities"}
-
-            }
-        
-        $ExecutionReturnCodeValue = switch ($UpdateEvent.ExecutionReturnCode ) 
-            {
-                0 {"SUCCESS"}
-                1 {"ERROR"}
-                2 {"REBOOT_REQUIRED"}
-                3 {"DEP_SOFT_ERROR"}
-                4 {"DEP_HARD_ERROR"}
-                5 {"PLATFORM_UNSUPPORTED"}
-                6 {"REBOOTING_SYSTEM"}
-                7 {"PASSWORD_REQUIRED"}
-                8 {"NO_DOWNGRADE"}
-                9 {"REBOOT_UPDATE_PENDING"}
-                10 {"INVALID_CMDLINE_SPEC"}
-                11 {"UNKNOWN_OPTION"}
-                12 {"AUTHORIZATION_LEVEL"}
-
-            }
-
-            $EventTypeValue = switch ($UpdateEvent.EventType) 
-            {
-                0 {"Update Completed"}
-                1 {"Update Failed"}
-                2 {"BIOS Updated"}
-
-            }
-
-        #generate a new Temp object
-        $CIMUpdateTemp = New-Object PSObject
-
-        # build a temporary array
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $UpdateEvent.componentType -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $ComponentTypeValue -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventType' -Value $UpdateEvent.EventType -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'EventTypeValue' -Value $EventTypeValue -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCode' -Value $UpdateEvent.ExecutionReturnCode -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ExecutionReturnCodeValue' -Value $ExecutionReturnCodeValue -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SWBReleaseID' -Value $UpdateEvent.SWBReleaseID -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $TempXMLCatalog.Name.Display.'#cdata-section' -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $TempXMLCatalog.Criticality.Display.'#cdata-section' -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $TempXMLCatalog.vendorVersion -Force
-        $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ReleaseDate' -Value $TempXMLCatalog.releaseDate -Force
-
-        
-        
-        #Create the object
-        [Array]$CIMUpdateArray += $CIMUpdateTemp
-                        
+                    #Create the object
+                    [Array]$CIMUpdateArray += $CIMUpdateTemp
+                }        
         }
 
 # Convert Array to JSON format
@@ -1454,20 +1520,23 @@ $LogResponse = Post-LogAnalyticsData @params
 #####################################
 #### Getting CIM PenetrationRate ####
 #####################################
-$CIMPenetrationRate = get-DCUCIM -CIMClass PenetrationRate
+$DellInstalledDriver = get-SATDUpdateStatus InstalledAll
+$LastInstallID = $DellInstalledDriver | Sort-Object DriverScanID | Select-Object -ExpandProperty DriverScanID -Last 1
+$TotalInstallDriver = ($DellDriver | Where-Object {$_.DriverScanID -eq $LastInstallID}).Count
+$CIMPenetrationRate =  [Math]::Round(($TotalInstallDriver - $DriverArray.Count) * 100 / $TotalInstallDriver,2)
 
 #Prepare the Table Array for log analytics
-$CIMUpdateArray = New-Object PSObject
+$CIMPenetrationArray = New-Object PSObject
 
-$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
-$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
-$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
-$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
-$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force    
-$CIMUpdateArray | Add-Member -MemberType NoteProperty -Name 'PenetrationRate' -Value $CIMPenetrationRate.UpToDateRate -Force
+$CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+$CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+$CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+$CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+$CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force    
+$CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'PenetrationRate' -Value $CIMPenetrationRate -Force
 
 # Convert Array to JSON format
-$PenetrationRateInfoJson = $CIMUpdateArray | ConvertTo-Json
+$PenetrationRateInfoJson = $CIMPenetrationArray | ConvertTo-Json
 
 # Loging Informations to MS Event
 New-MSEventLog -EventID 11 -EntryType Information -Message $PenetrationRateInfoJson
@@ -1487,42 +1556,10 @@ $LogResponse = Post-LogAnalyticsData @params
 #######################################
 #### Getting CIM NonComplianceList ####
 #######################################
-$CIMNonComplianceList = get-DCUCIM -CIMClass NonComplianceList
+$CIMNonComplianceList = $DriverUpdate | Where-Object {$_.InstallationStatus -ne "not installed" -and ($_.InstallationReturnCode -ne "Succeeded" -and $_.InstallationReturnCode -ne "RequiresReboot")}
 
-#prepare data
-[array]$NonComplianceList = @()
-[array]$NonComplianceList = $CIMNonComplianceList.NCUpdateList.Split("},{")
-$NonComplianceList = $NonComplianceList | Where-Object { $_ -ne "[" }
-$NonComplianceList = $NonComplianceList | Where-Object { $_ -ne "]" }
-$NonComplianceList = $NonComplianceList | Where-Object { $_ -ne "" }
-
-foreach ($Non in $NonComplianceList)
+foreach ($Compliance in $CIMNonComplianceList)
     {
-        #generate a new Temp object
-        $NonTempArray = New-Object PSObject
-
-        $NonTemp = $Non.Split("""")
-        $NonTemp = $NonTemp | Where-Object { $_ -ne "" }
-        $NonTemp = $NonTemp | Where-Object { $_ -ne ":" }
-
-        # build a temporary array
-        $NonTempArray | Add-Member -MemberType NoteProperty -Name 'Part' -Value $NonTemp[0] -Force
-        $NonTempArray | Add-Member -MemberType NoteProperty -Name 'Value' -Value $NonTemp[1] -Force
-
-        [Array]$NonComplianceList += $NonTempArray
-    }
-
-
-#Prepare the Table Array for log analytics
-$CIMNonComplianceListArray = @()
-
-foreach ($Compliance in $NonComplianceList)
-    {
-        If ($Compliance.Part -eq "SWB")
-            {
-        # Temp Var to get XML Datas from Device Catalog
-        $TempXMLCatalog = ($DeviceCatalog.Manifest.SoftwareComponent)| Where-Object {$_.releaseid -like $Compliance.Value}
-
         #generate a new Temp object
         $CIMNonComplianceTemp = New-Object PSObject
 
@@ -1532,19 +1569,18 @@ foreach ($Compliance in $NonComplianceList)
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
-        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $TempXMLCatalog.ComponentType.Display.'#cdata-section'
-        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SWBReleaseID' -Value $Compliance.Value -Force
-        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $TempXMLCatalog.Name.Display.'#cdata-section' -Force
-        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $TempXMLCatalog.Criticality.Display.'#cdata-section' -Force
-        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $TempXMLCatalog.vendorVersion -Force
-        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ReleaseDate' -Value $TempXMLCatalog.releaseDate -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $Compliance.DriverTypeName
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SWBReleaseID' -Value $Compliance.DriverId -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $Compliance.DriverTitle -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $Compliance.DriverImportanceLevel -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $Compliance.CatalogVersion -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ReleaseDate' -Value $Compliance.DriverReleaseDate -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'InstallStatus' -Value $Compliance.InstallationStatus -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ReturnCode' -Value $Compliance.InstallationReturnCode -Force
 
-        
-        
+   
         #Create the object
         [Array]$CIMNonComplianceListArray += $CIMNonComplianceTemp
-                        
-        }
     }
 # Convert Array to JSON format
 $ComplianceInfoJson = $CIMNonComplianceListArray | ConvertTo-Json
