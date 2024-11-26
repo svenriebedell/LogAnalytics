@@ -59,7 +59,9 @@ $TimeStampField = ""
 ## Do not change ##
 $MSEventLogName = "Dell"
 $MSEventSource = "DSA LogAnalytics"
-$Temp_Folder = "c:\temp"
+
+# Temp folder used for some processes all files will be deleted later
+$Temp_Folder = "C:\Temp\"
 
 ################################################################
 ###  Functions Section                                       ###
