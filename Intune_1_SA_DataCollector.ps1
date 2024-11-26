@@ -1520,7 +1520,7 @@ $LogResponse = Post-LogAnalyticsData @params
 #####################################
 $DellInstalledDriver = get-SATDUpdateStatus InstalledAll
 $LastInstallID = $DellInstalledDriver | Sort-Object DriverScanID | Select-Object -ExpandProperty DriverScanID -Last 1
-$TotalInstallDriver = ($DellDriver | Where-Object {$_.DriverScanID -eq $LastInstallID}).Count
+$TotalInstallDriver = ($DellInstalledDriver | Where-Object {$_.DriverScanID -eq $LastInstallID}).Count
 $CIMPenetrationRate =  [Math]::Round(($TotalInstallDriver - $DriverArray.Count) * 100 / $TotalInstallDriver,2)
 
 #Prepare the Table Array for log analytics
