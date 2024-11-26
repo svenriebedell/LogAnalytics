@@ -59,6 +59,7 @@ $TimeStampField = ""
 ## Do not change ##
 $MSEventLogName = "Dell"
 $MSEventSource = "DSA LogAnalytics"
+$Temp_Folder = "c:\temp"
 
 ################################################################
 ###  Functions Section                                       ###
