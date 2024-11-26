@@ -1206,17 +1206,15 @@ else
 
 ##############################
 #### get computer informations
-$deviceData = Get-ComputerInfo
-
 #### select datas of the device for loging
-$Username = ($deviceData.CsUserName).Split("\")[-1]
-$Vendor = ($deviceData.CsManufacturer).Split(" ")[0]
-$Model = ($deviceData.CsModel)
-$DeviceSerie = ($deviceData.CsModel).Split(" ")[0]
-$ServiceTag = $deviceData.BiosSerialNumber
-$DeviceSKU = $deviceData.CsSystemSKUNumber
-$OSVersion = $deviceData.OsVersion
-$WinEdition = $deviceData.OsName
+$Username = $env:USERNAME
+$Vendor = ((Get-CimInstance -ClassName CIM_ComputerSystem).Manufacturer).Split(" ")[0]
+$Model = (Get-CimInstance -ClassName CIM_ComputerSystem).Model
+$DeviceSerie = ((Get-CimInstance -ClassName CIM_ComputerSystem).Model).Split(" ")[0]
+$ServiceTag = (Get-CimInstance -ClassName CIM_BIOSElement).SerialNumber
+$DeviceSKU = (Get-CimInstance -Namespace root\wmi -ClassName MS_SystemInformation).SystemSKU
+$OSVersion = (Get-CimInstance -ClassName CIM_OperatingSystem).Version
+$WinEdition = (Get-CimInstance -ClassName CIM_OperatingSystem).Caption
 
 ##########################################################
 #### getting missing drivers by Dell SupportAssist    ####
