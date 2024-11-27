@@ -242,6 +242,7 @@ function get-SATDUpdateStatus
             1.0.4   updated function Install_PSModule Version 1.0.1
             1.0.5   sending return false if the device has no SA scans in the last 7 days
             1.0.6   adding support of installed driver
+            1.0.7   adding CategoryName to Output
 
         Requirements:
             - Install of the PSSQLite Module form the PowerShell Gallery should be allowed
@@ -727,6 +728,7 @@ function get-SATDUpdateStatus
                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverReleaseDate' -Value ($Scaned | Where-Object {$_.DriverScan_id -eq $LastScanResult.ID}).DriverReleaseDate
                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverDescription' -Value ($Scaned | Where-Object {$_.DriverScan_id -eq $LastScanResult.ID}).DriverDescription
                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value ($Scaned | Where-Object {$_.DriverScan_id -eq $LastScanResult.ID}).DriverCategory
+                                                            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverCategoryName' -Value ($Scaned | Where-Object {$_.DriverScan_id -eq $LastScanResult.ID}).DriverCategoryName
                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverType' -Value ($Scaned | Where-Object {$_.DriverScan_id -eq $LastScanResult.ID}).DriverType
                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'RecordID' -Value ($Scaned | Where-Object {$_.DriverScan_id -eq $LastScanResult.ID}).RecordID
                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverTypeName' -Value ($Scaned | Where-Object {$_.DriverScan_id -eq $LastScanResult.ID}).DriverTypeName
@@ -921,6 +923,7 @@ function get-SATDUpdateStatus
                                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverReleaseDate' -Value $Scaned.DriverReleaseDate
                                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverDescription' -Value $Scaned.DriverDescription
                                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value $Scaned.DriverCategory
+                                                                            $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverCategoryName' -Value $Scaned.DriverCategoryName
                                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverType' -Value $Scaned.DriverType
                                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'RecordID' -Value $Scaned.RecordID
                                                                             $TempDriver | Add-Member -MemberType NoteProperty -Name 'DriverTypeName' -Value $Scaned.DriverTypeName
