@@ -19,7 +19,7 @@ limitations under the License.
 
 <#Version Changes
 
-1.0.0   inital version (relace Intune_1_Detection_Driver_Installed.ps1 and Intune_1_Detection_Driver_Missing.ps1)
+1.0.0   inital version
 
 Knowing Issues
 -   tbd
@@ -29,14 +29,14 @@ Knowing Issues
 
 <#
 .Synopsis
-   This PowerShell collecting data from Dell Command | Update like Drivers need to updated, installed drivers and update results. It will generate 3 custom table in Microsoft LogAnalytics missing/installed/Results and upload these informations to LogAnalytics (portal.azure.com)
-   IMPORTANT: This script need to install Dell Command Update first otherwise you will get no details about installed/missing drivers
+   This PowerShell collecting data from Dell SupportAssist like Drivers need to updated, installed drivers and update results. It will generate 3 custom table in Microsoft LogAnalytics missing/installed/Results and upload these informations to LogAnalytics (portal.azure.com)
+   IMPORTANT: This script need Dell SupportAssist for Business first otherwise you will get no details about installed/missing drivers
    IMPORTANT: LogAnalytics is a service from Microsoft and is NOT free of charge please checking your MS contracts if you have this service availible otherwise you need to order this service.
    IMPORTANT: This script does not reboot the system to apply or query system.
    IMPORTANT: This script is supporting Dell Business Devices only (Optiplex, Precision, Latitude and Mobile XPS)
 
 .DESCRIPTION
-   This PowerShell is starting the Dell Command Update driver scan and collect all installed Driver Informations Driver-Name, Driver-Version and Driver-Category, Driver-Severity and using the LogAnalytics API to upload all informations directly to portal.azure.com / LogAnalytics Service.
+   This PowerShell is using the Dell SupportAssist driver scandetails and collect all installed Driver Informations Driver-Name, Driver-Version and Driver-Category, Driver-Severity and using the LogAnalytics API to upload all informations directly to portal.azure.com / LogAnalytics Service.
    
 #>
 
@@ -48,11 +48,11 @@ Knowing Issues
 # Log analytics part
 $CustomerId = "Your LogAnalytics ID"
 $SharedKey = "your LogAnalytics Key"
-$LogTypeInstalled = "DellDriverInstalled"                   # if you are using the Dell DCU Dashboard, do not change this as the queries will no longer run successfully
-$LogTypeMissing = "DellDriverMissing"                       # if you are using the Dell DCU Dashboard, do not change this as the queries will no longer run successfully
-$LogTypeEvents = "DellUpdateEvents"                         # if you are using the Dell DCU Dashboard, do not change this as the queries will no longer run successfully
-$LogTypePenetrationRate = "DellUpdatePenetrationRate"       # if you are using the Dell DCU Dashboard, do not change this as the queries will no longer run successfully
-$LogTypeNonComplianceList = "DellUpdateNonComplianceList"   # if you are using the Dell DCU Dashboard, do not change this as the queries will no longer run successfully
+$LogTypeInstalled = "DellDriverInstalled"                   # if you are using the Dell SA Dashboard, do not change this as the queries will no longer run successfully
+$LogTypeMissing = "DellDriverMissing"                       # if you are using the Dell SA Dashboard, do not change this as the queries will no longer run successfully
+$LogTypeEvents = "DellUpdateEvents"                         # if you are using the Dell SA Dashboard, do not change this as the queries will no longer run successfully
+$LogTypePenetrationRate = "DellUpdatePenetrationRate"       # if you are using the Dell SA Dashboard, do not change this as the queries will no longer run successfully
+$LogTypeNonComplianceList = "DellUpdateNonComplianceList"   # if you are using the Dell SA Dashboard, do not change this as the queries will no longer run successfully
 $TimeStampField = ""
 #***********************************************************************************************************
 
@@ -1382,7 +1382,7 @@ else
 
 
 ############################################################
-#### getting installed drivers by Dell Command | Update ####
+#### getting installed drivers by Inventory Collector   ####
 ############################################################
 
 #run Inventory Collector
