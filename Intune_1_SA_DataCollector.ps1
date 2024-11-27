@@ -1210,7 +1210,8 @@ else
 ##############################
 #### get computer informations
 #### select datas of the device for loging
-$Username = $env:USERNAME
+$Username = ((Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -ExpandProperty UserName -ErrorAction SilentlyContinue).split("\"))[1]
+
 $Vendor = ((Get-CimInstance -ClassName CIM_ComputerSystem).Manufacturer).Split(" ")[0]
 $Model = (Get-CimInstance -ClassName CIM_ComputerSystem).Model
 $DeviceSerie = ((Get-CimInstance -ClassName CIM_ComputerSystem).Model).Split(" ")[0]
