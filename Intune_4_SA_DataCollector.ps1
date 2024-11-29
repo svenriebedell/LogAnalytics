@@ -1,7 +1,7 @@
 <#
 _author_ = Sven Riebe <sven_riebe@Dell.com>
 _twitter_ = @SvenRiebe
-_version_ = 1.0.0
+_version_ = 1.0.1
 _Dev_Status_ = Test
 Copyright (c)2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 
@@ -20,6 +20,7 @@ limitations under the License.
 <#Version Changes
 
 1.0.0   inital version
+1.0.1   delete invcolpc process for getting install base to SA database and add assettag field to datatables
 
 Knowing Issues
 -   tbd
@@ -59,9 +60,6 @@ $TimeStampField = ""
 ## Do not change ##
 $MSEventLogName = "Dell"
 $MSEventSource = "DSA LogAnalytics"
-
-# Temp folder used for some processes all files will be deleted later
-$Temp_Folder = "C:\Temp\"
 
 ################################################################
 ###  Functions Section                                       ###
@@ -1158,58 +1156,6 @@ else
        Exit 1
     }
 
-###############################
-#### Check Tempary Folder exist
-
-if ((Test-Path -Path $Temp_Folder) -eq $false)
-    {
-
-        $EventMessage = [PSCustomObject]@{
-            Process = "Check folder " + $Temp_Folder +" is available"
-            Exist = $false
-            Status = "Folder does not exist on device and will generated now"
-        } | ConvertTo-Json
-
-        new-MSEventLog -EventId 12 -EntryType Error -Message $EventMessage
-
-        New-Item -Path $Temp_Folder -ItemType Directory
-
-        if ((Test-Path -Path $Temp_Folder) -eq $false)
-            {
-                $EventMessage = [PSCustomObject]@{
-                    Process = "Generate Folder " + $Temp_Folder
-                    Exist = $false
-                    Status = "Failure to make directory " + $Temp_Folder + "Script stops by Exit 1"
-                } | ConvertTo-Json
-        
-                new-MSEventLog -EventId 12 -EntryType Error -Message $EventMessage
-
-                Exit 1
-            }
-        else 
-            {
-                $EventMessage = [PSCustomObject]@{
-                    Process = "Generate Folder " + $Temp_Folder
-                    Exist = $true
-                    Status = "Success to make directory " + $Temp_Folder
-                } | ConvertTo-Json
-        
-                new-MSEventLog -EventId 11 -EntryType Information -Message $EventMessage
-            }
-
-    }
-else 
-    {
-        $EventMessage = [PSCustomObject]@{
-            Process = "Check folder " + $Temp_Folder +" is available"
-            Exist = $true
-            Status = "Starting with collecting ComputerInformations"
-        } | ConvertTo-Json
-
-        new-MSEventLog -EventId 11 -EntryType Information -Message $EventMessage
-    }
-
-
 ##############################
 #### get computer informations
 #### select datas of the device for loging
@@ -1219,6 +1165,7 @@ $Vendor = ((Get-CimInstance -ClassName CIM_ComputerSystem).Manufacturer).Split("
 $Model = (Get-CimInstance -ClassName CIM_ComputerSystem).Model
 $DeviceSerie = ((Get-CimInstance -ClassName CIM_ComputerSystem).Model).Split(" ")[0]
 $ServiceTag = (Get-CimInstance -ClassName CIM_BIOSElement).SerialNumber
+$AssetTag = get-cimInstance -Namespace root\dcim\sysman\biosattributes -className StringAttribute | Where-Object{$_.AttributeName -eq "Asset"} | Select-Object -ExpandProperty CurrentValue
 $DeviceSKU = (Get-CimInstance -Namespace root\wmi -ClassName MS_SystemInformation).SystemSKU
 $OSVersion = (Get-CimInstance -ClassName CIM_OperatingSystem).Version
 $WinEdition = (Get-CimInstance -ClassName CIM_OperatingSystem).Caption
@@ -1248,6 +1195,7 @@ if ($null -eq $DriverUpdate)
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'AssetTag' -Value $AssetTag -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value "NOUPD" -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value "no updates" -Force
@@ -1289,6 +1237,7 @@ Else
                                 $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
                                 $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
                                 $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+                                $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'AssetTag' -Value $AssetTag -Force
                                 $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
                                 $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value $Update.DriverID -Force
                                 $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value $Update.DriverTitle -Force
@@ -1345,6 +1294,7 @@ else
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+        $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'AssetTag' -Value $AssetTag -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingID' -Value "NOUPD" -Force
         $DriverArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverMissingName' -Value "no updates" -Force
@@ -1385,45 +1335,50 @@ else
 #### getting installed drivers by Inventory Collector   ####
 ############################################################
 
-#run Inventory Collector
-& 'C:\Program Files (x86)\Dell\UpdateService\Service\InvColPC.exe' -outc=c:\temp\inventory.xml
+# Get Installed base history
+$DellInstalledDriver = get-SATDUpdateStatus InstalledAll
 
-# get datas from inventory scan
-try 
+#cleanup to the lastest installbase
+$InstalledArray = @()
+
+$DellInstalledDriver = $DellInstalledDriver | Sort-Object DriverTitle, DriverScanID -Descending
+
+#First round check
+$ArrayCheck = $false
+
+foreach ($InstDriver in $DellInstalledDriver)
     {
-        [xml]$DriverInventory = Get-Content c:\temp\inventory.xml -ErrorAction Stop
-        Remove-Item -Path c:\temp\inventory.xml -Recurse
+
+        if($InstalledArray.Count -gt 0)
+            {
+                # Check if driver exist in Array
+                $ArrayCheck = $InstalledArray.DriverName.Contains($InstDriver.DriverTitle)
+            }
+
+        if ($ArrayCheck -eq $false )
+            {
+                #generate a new Temp object
+                $InstalledArrayTemp  = New-Object PSObject
+
+                # build a temporary array
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'AssetTag' -Value $AssetTag -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSEdition' -Value $WinEdition -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSVersion' -Value $OSVersion -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $InstDriver.DriverTitle -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $InstDriver.InventoryVersion -Force
+                $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value $InstDriver.DriverCategoryName -Force
+
+                #Create the object
+                [Array]$InstalledArray  += $InstalledArrayTemp
+            }
     }
-catch 
-    {
-        Write-Host "No Inventory file found"
-    }
-
-#Prepare the Table Array for log analytics
-$InstalledArray  = @()
-
-foreach ($Driver in $DriverInventory.SVMInventory.Device)
-        {     
-            #generate a new Temp object
-            $InstalledArrayTemp  = New-Object PSObject
-
-            # build a temporary array
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $env:computername -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'Manufacturer' -Value $Vendor -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSEdition' -Value $WinEdition -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'OSVersion' -Value $OSVersion -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverName' -Value $Driver.display  -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverVersion' -Value $Driver.application.version -Force
-            $InstalledArrayTemp | Add-Member -MemberType NoteProperty -Name 'DriverCategory' -Value $Driver.application.componentType -Force
-
-            #Create the object
-            [Array]$InstalledArray  += $InstalledArrayTemp                     
-        }
 
 # Convert Array to JSON format
 $InstalledInfoJson = $InstalledArray | ConvertTo-Json
@@ -1465,6 +1420,7 @@ foreach ($UpdateEvent in $CIMUpdateEvents)
                     $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
                     $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ProductLine' -Value $DeviceSerie -Force
                     $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+                    $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'AssetTag' -Value $AssetTag -Force
                     $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'SystemID' -Value $DeviceSKU -Force
                     $CIMUpdateTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $UpdateEvent.DriverTypeName -Force
 
@@ -1525,10 +1481,8 @@ $LogResponse = Post-LogAnalyticsData @params
 #####################################
 #### Getting CIM PenetrationRate ####
 #####################################
-$DellInstalledDriver = get-SATDUpdateStatus InstalledAll
-$LastInstallID = $DellInstalledDriver | Sort-Object DriverScanID | Select-Object -ExpandProperty DriverScanID -Last 1
-$TotalInstallDriver = ($DellInstalledDriver | Where-Object {$_.DriverScanID -eq $LastInstallID}).Count
-$CIMPenetrationRate =  [Math]::Round(($TotalInstallDriver - $DriverArray.Count) * 100 / $TotalInstallDriver,2)
+
+$CIMPenetrationRate =  [Math]::Round(($InstalledArray.Count - $DriverArray.Count) * 100 / $InstalledArray.Count,2)
 
 #Prepare the Table Array for log analytics
 $CIMPenetrationArray = New-Object PSObject
@@ -1537,6 +1491,7 @@ $CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'ComputerName' 
 $CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
 $CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
 $CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+$CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'AssetTag' -Value $AssetTag -Force
 $CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force    
 $CIMPenetrationArray | Add-Member -MemberType NoteProperty -Name 'PenetrationRate' -Value $CIMPenetrationRate -Force
 
@@ -1573,6 +1528,7 @@ foreach ($Compliance in $CIMNonComplianceList)
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'UserName' -Value $Username -Force
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'DeviceModel' -Value $Model -Force
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SerialNo' -Value $ServiceTag -Force
+        $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'AssetTag' -Value $AssetTag -Force
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SystemSKU' -Value $DeviceSKU -Force
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'ComponentType' -Value $Compliance.DriverTypeName
         $CIMNonComplianceTemp | Add-Member -MemberType NoteProperty -Name 'SWBReleaseID' -Value $Compliance.DriverId -Force
