@@ -1587,12 +1587,10 @@ try
     {
                 [xml]$DSATelemetry = Get-Content -Path $LastDSAReport -ErrorAction Stop
                 Write-Host "Get successful XML content from $LastDSAReport" -ForegroundColor Green
-                $GetReportSuccess = $true
     }
 catch
     {
                 Write-Host "Error get no XML content from DSA Report, no access to folder or Dell Support Assist does not save a report yet" -ForegroundColor Red
-                $GetReportSuccess = $false
     }
 
 ########################
