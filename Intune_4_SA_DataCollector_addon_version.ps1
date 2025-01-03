@@ -1,7 +1,7 @@
 <#
 _author_ = Sven Riebe <sven_riebe@Dell.com>
 _twitter_ = @SvenRiebe
-_version_ = 1.0.1
+_version_ = 1.0.2
 _Dev_Status_ = Test
 Copyright (c)2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 
@@ -21,6 +21,7 @@ limitations under the License.
 
 1.0.0   inital version
 1.0.1   delete invcolpc process for getting install base to SA database and add assettag field to datatables
+1.0.2   add table for Warranty, Monitor and Dock
 
 Knowing Issues
 -   tbd
@@ -1656,7 +1657,7 @@ foreach ($Monitor in $MonitorArray)
         $TempMonitorArray | Add-Member -MemberType NoteProperty -Name 'HardwareInfoGUID' -Value $Monitor.HardwareInfoGUID
         $TempMonitorArray | Add-Member -MemberType NoteProperty -Name 'Index' -Value $Monitor.Index
 
-        If ($DSATelemetry.DCSA_Summary_Log.Hardware_Info.System_Type -eq "Laptop(10)" -or $DSATelemetry.DCSA_Summary_Log.Hardware_Info.System_Type -eq "Convertible(31)" -or $DSATelemetry.DCSA_Summary_Log.Hardware_Info.System_Type -eq "Detachable(32)")
+        If ($DSATelemetry.DCSA_Summary_Log.Hardware_Info.System_Type -eq "Laptop(10)" -or $DSATelemetry.DCSA_Summary_Log.Hardware_Info.System_Type -eq "Laptop(31)" -or $DSATelemetry.DCSA_Summary_Log.Hardware_Info.System_Type -eq "Desktop(32)")
             {
             If ($Monitor.Monitor_Type -eq "Non Dell Monitor")
                 {
