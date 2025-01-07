@@ -1,0 +1,637 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Dell Asset Information\r\nThis Dashboard shows Docking Stations, Monitors and Service contract."
+      },
+      "name": "text - 2"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Dell Docking informations",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Dell Docking Asset Information\r\nThis query shows you which device is connected to a Dell Docking Station. "
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "DCSA_Dock_CL\r\n| summarize arg_max(TimeGenerated, *) by System_Service_Tag_s\r\n| summarize count() by Name_s",
+              "size": 0,
+              "title": "Dock Type Summary",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "Summary Dock type",
+            "styleSettings": {
+              "showBorder": true
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "DCSA_Dock_CL\r\n| summarize arg_max(TimeGenerated, *) by System_Service_Tag_s\r\n| summarize count() by PackageFirmwareVersion_s",
+              "size": 0,
+              "title": "Dock Firmware Versions",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "Summary Dock Firmware",
+            "styleSettings": {
+              "showBorder": true
+            }
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "dc2d43ee-bae4-4f87-ba06-6b662b06dbda",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TimeRange",
+                  "type": 4,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 172800000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2419200000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ]
+                  },
+                  "value": {
+                    "durationMs": 2592000000
+                  }
+                },
+                {
+                  "id": "b7a504d6-0e68-44fe-b997-35f9be2aff33",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "DeviceServiceTag",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Dock_CL\r\n| where isnotempty (System_Service_Tag_s) \r\n| distinct System_Service_Tag_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                },
+                {
+                  "version": "KqlParameterItem/1.0",
+                  "name": "DockingModel",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Dock_CL\r\n| where isnotempty (Name_s) \r\n| distinct Name_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "value": [
+                    "value::all"
+                  ],
+                  "id": "27c4d802-4028-4da4-8eeb-d5d46c34ac78"
+                },
+                {
+                  "version": "KqlParameterItem/1.0",
+                  "name": "DockFirmwareVersion",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Dock_CL\r\n| where isnotempty (PackageFirmwareVersion_s) \r\n| distinct PackageFirmwareVersion_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "id": "196b4cb1-c9d7-435e-b534-3ab673221a2f"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 4"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "title": "Dell Docking Stations",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "## Docking Station Information\r\nDetails about Dell Docking Station attached to the device"
+                  },
+                  "name": "text - 0"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "DCSA_Dock_CL\r\n| where System_Service_Tag_s in ({DeviceServiceTag})\r\n| where PackageFirmwareVersion_s in ({DockFirmwareVersion})\r\n| where Name_s in ({DockingModel})\r\n| summarize arg_max(TimeGenerated, *) by ServiceTag_s\r\n| project Hostname = ComputerName_s, DeviceServiceTag = System_Service_Tag_s, AssetTag = AssetTag_s, DockingServiceTag = ServiceTag_s, DockingModel = Name_s, DockingFirmware = PackageFirmwareVersion_s, LastDocked = Docking_Time_t, LastScan = TimeGenerated",
+                    "size": 0,
+                    "title": "Dock Asset Information",
+                    "timeContextFromParameter": "TimeRange",
+                    "showExportToExcel": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "sortBy": []
+                  },
+                  "name": "Dock Asset Data"
+                }
+              ]
+            },
+            "name": "DockingAssest"
+          }
+        ]
+      },
+      "name": "Dock Asset",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Monitor informations",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Monitor Information\r\nDetails about Monitors attached to the device"
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "DCSA_Monitor_CL\r\n| where ModelName_s != \"\"\r\n| summarize arg_max(TimeGenerated, *) by ServiceTag_s\r\n| summarize count() by ModelName_s",
+              "size": 0,
+              "title": "Dell Monitor Type Summary",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart",
+              "sortBy": []
+            },
+            "customWidth": "50",
+            "name": "Summary Monitor Type",
+            "styleSettings": {
+              "showBorder": true
+            }
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "165977b6-9229-408a-b1d6-8043a2357b92",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TimeRange",
+                  "type": 4,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 172800000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2419200000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ]
+                  },
+                  "value": {
+                    "durationMs": 2592000000
+                  }
+                },
+                {
+                  "id": "7a9844ef-4d0e-4399-8ca0-8345e995c261",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "DeviceServiceTag",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Monitor_CL\r\n| where isnotempty (System_Service_Tag_s) \r\n| distinct System_Service_Tag_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                },
+                {
+                  "id": "22a2591e-e9da-4ddf-a9ca-af9a0a5f204f",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "DisplayModel",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Monitor_CL\r\n| where isnotempty (ModelName_s) \r\n| distinct ModelName_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                },
+                {
+                  "id": "e962b2fd-9398-4757-9f55-61b7c5e3cd22",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "DisplayServiceTag",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Monitor_CL\r\n| where isnotempty (ServiceTag_s) \r\n| distinct ServiceTag_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "value": [
+                    "value::all"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 4 - Copy"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "DCSA_Monitor_CL\r\n| where System_Service_Tag_s in ({DeviceServiceTag})\r\n| where ServiceTag_s in ({DisplayServiceTag})\r\n| where ModelName_s in ({DisplayModel})\r\n| summarize arg_max(TimeGenerated, *) by Vendor_Specific_Data_s, System_Service_Tag_s\r\n| project Hostname = ComputerName_s, DeviceServiceTag = System_Service_Tag_s, AssetTag = AssetTag_s, ServiceTagDisplay = ServiceTag_s, MonitorVendor = Monitor_Type_s, DriverVersion = DriverVersion_s, ModelName = ModelName_s",
+                    "size": 0,
+                    "timeContext": {
+                      "durationMs": 86400000
+                    },
+                    "showExportToExcel": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "gridSettings": {
+                      "sortBy": [
+                        {
+                          "itemKey": "ModelName",
+                          "sortOrder": 2
+                        }
+                      ]
+                    },
+                    "sortBy": [
+                      {
+                        "itemKey": "ModelName",
+                        "sortOrder": 2
+                      }
+                    ]
+                  },
+                  "name": "query - 1"
+                }
+              ]
+            },
+            "name": "Monitor Asset",
+            "styleSettings": {
+              "showBorder": true
+            }
+          }
+        ]
+      },
+      "name": "Monitor Asset",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Support Assist Informations",
+        "items": [
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "d29f7351-56cf-4ec5-8573-4b6e4f0d7b12",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TimeRange",
+                  "type": 4,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 172800000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2419200000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ]
+                  },
+                  "value": {
+                    "durationMs": 2592000000
+                  }
+                },
+                {
+                  "id": "76c853b1-5718-4d62-a360-204ac3dd571e",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "DeviceServiceTag",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Warranty_CL\r\n| where isnotempty (System_Service_Tag_s) \r\n| distinct System_Service_Tag_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                },
+                {
+                  "id": "8ebf1fa1-5144-4a4c-97cc-22fc57789598",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "SupportLevel",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "DCSA_Warranty_CL\r\n| where isnotempty (WarrantyLevel_s) \r\n| distinct WarrantyLevel_s",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "value": [
+                    "value::all"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 4 - Copy - Copy"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "title": "Dell Support Contract",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "## Dell Support Information\r\nYou get informations about devices runnig out of contract and the active support levels of your fleet. This table shows you all devices with a service contract time less 90 days. Device expired 90 days and longer will not displayed."
+                  },
+                  "name": "text - 0"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "DCSA_Warranty_CL\r\n| where EntitlementExpiryDate_t > now()\r\n| where WarrantyLevel_s <> \"\"\r\n| where System_Service_Tag_s in ({DeviceServiceTag})\r\n| where WarrantyLevel_s in ({SupportLevel})\r\n| summarize arg_max(TimeGenerated, *) by System_Service_Tag_s\r\n| order by EntitlementExpiryDate_t asc\r\n| project Hostname = ComputerName_s, DeviceServiceTag = System_Service_Tag_s, SupportLevel = WarrantyLevel_s, ExpiryDate = EntitlementExpiryDate_t, LastStatusUpdate = TimeGenerated",
+                    "size": 0,
+                    "title": "Dell Support Status",
+                    "timeContext": {
+                      "durationMs": 2592000000
+                    },
+                    "showExportToExcel": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "SupportLevel",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "colors",
+                            "thresholdsGrid": [
+                              {
+                                "operator": "==",
+                                "thresholdValue": "ProSupport Plus",
+                                "representation": "green",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "ProSupport",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "Basic",
+                                "representation": "gray",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": "redBright",
+                                "text": "{0}{1}"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "filter": true
+                    },
+                    "sortBy": []
+                  },
+                  "name": "Out of warranty - Copy",
+                  "styleSettings": {
+                    "showBorder": true
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "DCSA_Warranty_CL\r\n//| join DCSA_Hardware_CL on System_Service_Tag_s\r\n| where EntitlementExpiryDate_t < now() + 90d\r\n| where EntitlementExpiryDate_t + 90d > now()\r\n| where WarrantyLevel_s <> \"\"\r\n| summarize arg_max(TimeGenerated, *) by System_Service_Tag_s\r\n| project Hostname = HostName_s, DeviceServiceTag = System_Service_Tag_s, SupportLevel = WarrantyLevel_s, ExpiryDate = EntitlementExpiryDate_t, LastStatusUpdate = TimeGenerated",
+                    "size": 0,
+                    "title": "Out of warrenty candidates",
+                    "timeContext": {
+                      "durationMs": 2592000000
+                    },
+                    "showExportToExcel": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "SupportLevel",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "colors",
+                            "thresholdsGrid": [
+                              {
+                                "operator": "==",
+                                "thresholdValue": "ProSupport Plus",
+                                "representation": "green",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "ProSupport",
+                                "representation": "blue",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "Basic",
+                                "representation": "orange",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": "red",
+                                "text": "{0}{1}"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "rowLimit": 10000,
+                      "filter": true
+                    },
+                    "sortBy": []
+                  },
+                  "name": "Out of warranty",
+                  "styleSettings": {
+                    "showBorder": true
+                  }
+                }
+              ]
+            },
+            "name": "Warranty Asset"
+          }
+        ]
+      },
+      "name": "Support",
+      "styleSettings": {
+        "showBorder": true
+      }
+    }
+  ]
+}
