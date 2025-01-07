@@ -1964,9 +1964,5 @@
       },
       "name": "query - 7"
     }
-  ],
-  "fallbackResourceIds": [
-    "/subscriptions/124636a2-a349-4c59-b0b3-6769ed6dc6f9/resourcegroups/dell_itpro_lab/providers/microsoft.operationalinsights/workspaces/intunelog"
-  ],
-  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+  ]
 }
