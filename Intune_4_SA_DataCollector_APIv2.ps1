@@ -88,18 +88,18 @@ function New-MSEventLog
                 try
                     {
                         [System.Diagnostics.EventLog]::CreateEventSource($MSEventSource, $MSEventLogName)
-                        Write-Verbose "Event source '$source' created for log '$logName'." -Verbose
+                        Write-Verbose "Event source '$MSEventSource' created for log '$MSEventLogName'." -Verbose
                     }
                 catch
                     {
-                        Write-Verbose "Event source '$source' fail to create for log '$logName'." -Verbose
+                        Write-Verbose "Event source '$MSEventSource' fail to create for log '$MSEventLogName'." -Verbose
                         return $false
                     }
 
             }
         else
             {
-                Write-Verbose "Event source '$source' already exists." -Verbose
+                Write-Verbose "Event source '$MSEventSource' already exists." -Verbose
             }
 
         try
@@ -1401,18 +1401,25 @@ $bearerToken = (Invoke-RestMethod -Uri $uri -Method "Post" -Body $body -Headers 
 
 # prepare the API parameter
 $headers = @{"Authorization" = "Bearer $bearerToken"; "Content-Type" = "application/json" };
-$uri = "$DceURI/dataCollectionRules/$DcrImmutableId/streams/Custom-$Table"+"?api-version=2023-01-01";
 
 #upload tables
+$uri = "$DceURI/dataCollectionRules/$DcrImmutableId/streams/Custom-$($LogTables[0])"+"?api-version=2023-01-01";
 $uploadResponse = Invoke-RestMethod -Uri $uri -Method "Post" -Body $UpdateInfoJson -Headers $headers;
+$uri = "$DceURI/dataCollectionRules/$DcrImmutableId/streams/Custom-$($LogTables[1])"+"?api-version=2023-01-01";
 $uploadResponse = Invoke-RestMethod -Uri $uri -Method "Post" -Body $InstalledInfoJson -Headers $headers;
+$uri = "$DceURI/dataCollectionRules/$DcrImmutableId/streams/Custom-$($LogTables[2])"+"?api-version=2023-01-01";
 $uploadResponse = Invoke-RestMethod -Uri $uri -Method "Post" -Body $EventInfoJson -Headers $headers;
+$uri = "$DceURI/dataCollectionRules/$DcrImmutableId/streams/Custom-$($LogTables[3])"+"?api-version=2023-01-01";
 $uploadResponse = Invoke-RestMethod -Uri $uri -Method "Post" -Body $PenetrationRateInfoJson -Headers $headers;
+$uri = "$DceURI/dataCollectionRules/$DcrImmutableId/streams/Custom-$($LogTables[4])"+"?api-version=2023-01-01";
 $uploadResponse = Invoke-RestMethod -Uri $uri -Method "Post" -Body $ComplianceInfoJson -Headers $headers;
 
-## create DCR JSON Tables
-$UpdateInfoJson | out-file .\Update.json
-$InstalledInfoJson | out-file .\Installed.json
-$EventInfoJson | out-file .\Event.json
-$PenetrationRateInfoJson | out-file .\PenetrationRate.json
-$ComplianceInfoJson | out-file .\Compliance.json
+# use this section to create your JSON templates in case your are not migrate existing tables
+<#
+    # create DCR JSON Tables
+    $UpdateInfoJson | out-file c:\temp\Update.json
+    $InstalledInfoJson | out-file c:\temp\Installed.json
+    $EventInfoJson | out-file c:\temp\Event.json #####
+    $PenetrationRateInfoJson | out-file c:\temp\PenetrationRate.json
+    $ComplianceInfoJson | out-file c:\temp\Compliance.json ####
+#>
