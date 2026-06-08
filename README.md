@@ -1,4 +1,18 @@
 # LogAnalytics
+
+## ⚠️ Important Notice
+
+**As of September 2026, Microsoft is changing the Upload API used by these scripts.**
+
+Due to time constraints, I am currently unable to update these scripts to support the new API.
+You are welcome to continue using the existing scripts and JSON files, but **please be aware
+that you will need to maintain and adapt them yourself going forward.**
+
+I apologize for any inconvenience. If capacity allows in the future, I intend to revisit and
+update this repository — however, **there is no committed timeline** for when that will happen.
+
+Thank you for your understanding.
+
 This page shows some examples of how to use Dell tools in conjunction with Microsoft Log Analytics. The examples cover BIOS settings, device updates and AI applications like Dell Optimizer. The PowerShell scripts collect the data from the devices, there is a JSON file which configures the dashboard view. This must be copied into Log Analytics.
 
 ### Legal disclaimer: 
